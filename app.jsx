@@ -78,12 +78,53 @@ function pickField(obj, keys) {
   return null;
 }
 
+let firebaseReady = false;
+const firebaseService = {
+  init() {
+    try {
+      if (typeof firebase !== 'undefined' && !firebaseReady) {
+        const cfg = (() => {
+          try { return JSON.parse(localStorage.getItem('firebase_config')); } catch { return null; }
+        })() || (typeof window !== 'undefined' ? window.__FIREBASE_CONFIG__ : null);
+        if (cfg && cfg.apiKey) {
+          firebase.initializeApp(cfg);
+          firebaseReady = true;
+          if (typeof window !== 'undefined') window.firebaseReady = true;
+        }
+      }
+    } catch {}
+  },
+  read(key) {
+    try {
+      if (firebaseReady) {
+        return firebase.database().ref(key).once('value').then(s => s.val()).catch(() => null);
+      }
+      return null;
+    } catch { return null; }
+  },
+  write(key, value) {
+    try { if (firebaseReady) { return firebase.database().ref(key).set(value).catch(() => {}); } } catch {}
+  },
+  applyingRemote: false,
+  subscribe(key, onData) {
+    try {
+      if (!firebaseReady) return () => {};
+      const ref = firebase.database().ref(key);
+      const handler = snap => { try { const v = snap.val(); onData(v); } catch {} };
+      ref.on('value', handler);
+      return () => { try { ref.off('value', handler); } catch {} };
+    } catch { return () => {} }
+  }
+};
+firebaseService.init();
+
 const store = {
   read(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } },
   write(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    if (!firebaseService.applyingRemote) firebaseService.write(key, value);
   },
-  
+  writeFirebaseConfig(cfg) { try { localStorage.setItem('firebase_config', JSON.stringify(cfg)); } catch {} firebaseService.init(); }
 };
 
 function ensureSeeds() {
@@ -104,6 +145,8 @@ function ensureSeeds() {
 
 async function loadDataKey(key) {
   try {
+    const fromFirebase = await (firebaseReady ? firebaseService.read(key) : Promise.resolve(null));
+    if (fromFirebase && Array.isArray(fromFirebase)) return fromFirebase;
     const api = await fetch(`api/data/${key}`).then(r => r.ok ? r.text() : 'null').catch(() => 'null');
     const fromApi = (() => { try { return JSON.parse(api); } catch { return null; } })();
     if (fromApi && Array.isArray(fromApi)) return fromApi;
@@ -3460,6 +3503,21 @@ function App() {
         if (Array.isArray(data) && data.length) { setDuties(data); store.write('duties', data); }
       }
     })();
+  }, []);
+  React.useEffect(() => {
+    const subs = [];
+    const pushSub = (unsub) => { if (typeof unsub === 'function') subs.push(unsub); };
+    firebaseService.applyingRemote = true;
+    pushSub(firebaseService.subscribe('hospitals', v => { if (Array.isArray(v)) { setHospitals(v); store.write('hospitals', v); } }));
+    pushSub(firebaseService.subscribe('specialties', v => { if (Array.isArray(v)) { setSpecialties(v); store.write('specialties', v); } }));
+    pushSub(firebaseService.subscribe('departments', v => { if (Array.isArray(v)) { setDepartments(v); store.write('departments', v); } }));
+    pushSub(firebaseService.subscribe('doctors', v => { if (Array.isArray(v)) { setDoctors(v); store.write('doctors', v); } }));
+    pushSub(firebaseService.subscribe('shifts', v => { if (Array.isArray(v)) { setShifts(v); store.write('shifts', v); } }));
+    pushSub(firebaseService.subscribe('vacations', v => { if (Array.isArray(v)) { setVacations(v); store.write('vacations', v); } }));
+    pushSub(firebaseService.subscribe('vacation_plans', v => { if (Array.isArray(v)) { setVacationPlans(v); store.write('vacation_plans', v); } }));
+    pushSub(firebaseService.subscribe('duties', v => { if (Array.isArray(v)) { setDuties(v); store.write('duties', v); } }));
+    firebaseService.applyingRemote = false;
+    return () => { subs.forEach(fn => { try { fn(); } catch {} }); };
   }, []);
   
   return (
