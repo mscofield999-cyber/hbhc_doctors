@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HBHC Doctors – Duties & Vacations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet" />
+  <!-- React + Babel (runtime compile for JSX) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+</head>
+<body class="bg-watermark">
+  <header class="topbar">
+    <div class="brand">
+      <img src="hbhc-logo.png" alt="HBHC Logo" class="logo" />
+      <div>
+        <h1>HBHC Doctors</h1>
+        <p>Navigation Center</p>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="#/" class="nav-link"><i class="bi bi-house-door"></i>Home</a>
+      <a href="#/data-entry" class="nav-link"><i class="bi bi-database"></i>Data</a>
+      <a href="#/operations" class="nav-link"><i class="bi bi-gear"></i>Operations</a>
+      <a href="#/dashboard" class="nav-link"><i class="bi bi-bar-chart"></i>Dashboard</a>
+    </nav>
+  </header>
+
+  <div id="root"></div>
+
+  <footer>
+    <span id="toast"></span>
+  </footer>
+
+  <script type="text/babel" data-presets="env,react" src="app.jsx"></script>
+</body>
+</html>
