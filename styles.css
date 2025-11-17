@@ -277,7 +277,7 @@ footer { border-top: 1px solid var(--border); padding: 12px 20px; }
 .chip .rm { border: 0; background: transparent; cursor: pointer; color: #7c8493; }
 .chip .rm:hover { color: #111827; }
 /* Compact chip variant for inline names */
-.chip-mini { padding: 1px 6px; font-size: 10px; }
+.chip-mini { padding: 2px 8px; font-size: 12px; font-weight: 700; }
 
 /* Dashboard tab chips: larger, no border, 3D bubble; darker when selected */
 .chips.tabs { gap: 10px; align-items: center; flex-wrap: wrap; }
