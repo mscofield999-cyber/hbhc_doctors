@@ -3507,16 +3507,30 @@ function App() {
   React.useEffect(() => {
     const subs = [];
     const pushSub = (unsub) => { if (typeof unsub === 'function') subs.push(unsub); };
-    firebaseService.applyingRemote = true;
-    pushSub(firebaseService.subscribe('hospitals', v => { if (Array.isArray(v)) { setHospitals(v); store.write('hospitals', v); } }));
-    pushSub(firebaseService.subscribe('specialties', v => { if (Array.isArray(v)) { setSpecialties(v); store.write('specialties', v); } }));
-    pushSub(firebaseService.subscribe('departments', v => { if (Array.isArray(v)) { setDepartments(v); store.write('departments', v); } }));
-    pushSub(firebaseService.subscribe('doctors', v => { if (Array.isArray(v)) { setDoctors(v); store.write('doctors', v); } }));
-    pushSub(firebaseService.subscribe('shifts', v => { if (Array.isArray(v)) { setShifts(v); store.write('shifts', v); } }));
-    pushSub(firebaseService.subscribe('vacations', v => { if (Array.isArray(v)) { setVacations(v); store.write('vacations', v); } }));
-    pushSub(firebaseService.subscribe('vacation_plans', v => { if (Array.isArray(v)) { setVacationPlans(v); store.write('vacation_plans', v); } }));
-    pushSub(firebaseService.subscribe('duties', v => { if (Array.isArray(v)) { setDuties(v); store.write('duties', v); } }));
-    firebaseService.applyingRemote = false;
+    const skip = {
+      hospitals: Array.isArray(hospitals) && hospitals.length > 0,
+      specialties: Array.isArray(specialties) && specialties.length > 0,
+      departments: Array.isArray(departments) && departments.length > 0,
+      doctors: Array.isArray(doctors) && doctors.length > 0,
+      shifts: Array.isArray(shifts) && shifts.length > 0,
+      vacations: Array.isArray(vacations) && vacations.length > 0,
+      vacation_plans: Array.isArray(vacationPlans) && vacationPlans.length > 0,
+      duties: Array.isArray(duties) && duties.length > 0,
+    };
+    const wrap = (key, apply) => (val) => {
+      if (!Array.isArray(val)) return;
+      if (skip[key]) { skip[key] = false; return; }
+      firebaseService.applyingRemote = true;
+      try { apply(val); } finally { firebaseService.applyingRemote = false; }
+    };
+    pushSub(firebaseService.subscribe('hospitals', wrap('hospitals', v => { setHospitals(v); store.write('hospitals', v); })));
+    pushSub(firebaseService.subscribe('specialties', wrap('specialties', v => { setSpecialties(v); store.write('specialties', v); })));
+    pushSub(firebaseService.subscribe('departments', wrap('departments', v => { setDepartments(v); store.write('departments', v); })));
+    pushSub(firebaseService.subscribe('doctors', wrap('doctors', v => { setDoctors(v); store.write('doctors', v); })));
+    pushSub(firebaseService.subscribe('shifts', wrap('shifts', v => { setShifts(v); store.write('shifts', v); })));
+    pushSub(firebaseService.subscribe('vacations', wrap('vacations', v => { setVacations(v); store.write('vacations', v); })));
+    pushSub(firebaseService.subscribe('vacation_plans', wrap('vacation_plans', v => { setVacationPlans(v); store.write('vacation_plans', v); })));
+    pushSub(firebaseService.subscribe('duties', wrap('duties', v => { setDuties(v); store.write('duties', v); })));
     return () => { subs.forEach(fn => { try { fn(); } catch {} }); };
   }, []);
   
