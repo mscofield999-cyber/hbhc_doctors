@@ -3652,18 +3652,23 @@ function HomeCard({ title, desc, href }) {
   );
 }
 
-function HomePage() { return (
-  <main className="home-grid">
-    <HomeCard title="Data Entry" desc="Hospitals, specialties, shifts, doctors" href="#/data-entry" />
-    <HomeCard title="Schedules & Vacations" desc="Manage leave and generate rosters" href="#/operations" />
-    <HomeCard title="Dashboard" desc="Visualize staffing, leave, and load" href="#/dashboard" />
-    <HomeCard title="Diagnostics" desc="Performance & Accessibility" href="#/diagnostics" />
-  </main>
-); }
+function HomePage() {
+  const [mode, setMode] = React.useState(localStorage.getItem('view_mode') || 'auto');
+  React.useEffect(() => { try { localStorage.setItem('view_mode', mode); } catch {} if (typeof window.setViewMode === 'function') window.setViewMode(mode); }, [mode]);
+  return (
+    <main className="home-grid">
+      <HomeCard title="Data Entry" desc="Hospitals, specialties, shifts, doctors" href="#/data-entry" />
+      <HomeCard title="Schedules & Vacations" desc="Manage leave and generate rosters" href="#/operations" />
+      <HomeCard title="Dashboard" desc="Visualize staffing, leave, and load" href="#/dashboard" />
+      <HomeCard title="Diagnostics" desc="Performance & Accessibility" href="#/diagnostics" />
+    </main>
+  );
+}
 
 function App() {
   ensureSeeds();
   const [route, setRoute] = React.useState('#/operations');
+  const [viewMode, setViewMode] = React.useState(localStorage.getItem('view_mode') || 'auto');
   const [hospitals, setHospitals] = React.useState(store.read('hospitals', []));
   const [specialties, setSpecialties] = React.useState(store.read('specialties', []));
   const [departments, setDepartments] = React.useState(store.read('departments', []));
@@ -3676,6 +3681,18 @@ function App() {
   React.useEffect(() => { store.write('specialties', specialties); }, [specialties]);
   React.useEffect(() => { store.write('departments', departments); }, [departments]);
   React.useEffect(() => { store.write('vacation_plans', vacationPlans); }, [vacationPlans]);
+  React.useEffect(() => {
+    const applyViewMode = (m) => {
+      document.body.classList.remove('view-mobile','view-desktop');
+      if (m === 'mobile') document.body.classList.add('view-mobile');
+      if (m === 'desktop') document.body.classList.add('view-desktop');
+    };
+    applyViewMode(viewMode);
+    window.setViewMode = (m) => { try { localStorage.setItem('view_mode', m); } catch {} setViewMode(m || 'auto'); };
+    const onStorage = (e) => { if (e.key === 'view_mode') setViewMode((e.newValue || 'auto')); };
+    window.addEventListener('storage', onStorage);
+    return () => { window.removeEventListener('storage', onStorage); delete window.setViewMode; };
+  }, [viewMode]);
   React.useEffect(() => {
     (async () => {
       if ((Array.isArray(hospitals) ? hospitals.length : 0) === 0) {

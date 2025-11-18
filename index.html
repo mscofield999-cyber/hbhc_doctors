@@ -40,10 +40,18 @@
       </div>
     </div>
     <nav class="topnav">
-      <a href="#/" class="nav-link"><i class="bi bi-house-door"></i>Home</a>
-      <a href="#/data-entry" class="nav-link"><i class="bi bi-database"></i>Data</a>
-      <a href="#/operations" class="nav-link"><i class="bi bi-gear"></i>Operations</a>
-      <a href="#/dashboard" class="nav-link"><i class="bi bi-bar-chart"></i>Dashboard</a>
+      <button type="button" class="nav-toggle" aria-label="Toggle navigation"><i class="bi bi-list"></i>Menu</button>
+      <select class="view-select" aria-label="View mode">
+        <option value="auto">Auto</option>
+        <option value="desktop">Desktop</option>
+        <option value="mobile">Mobile</option>
+      </select>
+      <div class="dropdown">
+        <a href="#/" class="nav-link"><i class="bi bi-house-door"></i>Home</a>
+        <a href="#/data-entry" class="nav-link"><i class="bi bi-database"></i>Data</a>
+        <a href="#/operations" class="nav-link"><i class="bi bi-gear"></i>Operations</a>
+        <a href="#/dashboard" class="nav-link"><i class="bi bi-bar-chart"></i>Dashboard</a>
+      </div>
     </nav>
   </header>
 
@@ -54,5 +62,43 @@
   </footer>
 
   <script type="text/babel" data-presets="env,react" src="app.jsx"></script>
-</body>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var nav = document.querySelector('.topnav');
+        var btn = nav ? nav.querySelector('.nav-toggle') : null;
+        if (nav && btn) {
+          btn.addEventListener('click', function() {
+            var isOpen = nav.classList.toggle('open');
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          });
+          var select = nav.querySelector('.view-select');
+          var applySelect = function(val){
+            try { localStorage.setItem('view_mode', val); } catch {}
+            if (typeof window.setViewMode === 'function') window.setViewMode(val);
+          };
+          if (select) {
+            var cur = (localStorage.getItem('view_mode') || 'auto');
+            select.value = cur;
+            select.addEventListener('change', function(){ applySelect(select.value); });
+          }
+          // Close dropdown on outside click
+          document.addEventListener('click', function(e) {
+            if (!nav.classList.contains('open')) return;
+            if (!nav.contains(e.target)) {
+              nav.classList.remove('open');
+              btn.setAttribute('aria-expanded', 'false');
+            }
+          });
+          // Close on Escape key
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && nav.classList.contains('open')) {
+              nav.classList.remove('open');
+              btn.setAttribute('aria-expanded', 'false');
+              btn.focus();
+            }
+          });
+        }
+      });
+    </script>
+  </body>
 </html>
