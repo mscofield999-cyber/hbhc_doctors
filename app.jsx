@@ -3063,8 +3063,8 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
       : `<table class="table duties-table"><thead><tr><th>Date</th><th>Day</th><th>Morning</th><th>Evening</th><th>Night</th></tr></thead><tbody>${dutiesRows}</tbody></table>`;
 
     const css = `@page{size:A4;margin:3mm 10mm 10mm 10mm}
-    .sign-row{display:flex;gap:12px;margin-top:12px}
-    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:11px;color:#334155;text-align:center}`;
+    .sign-row{display:flex;gap:12px;margin-top:24px}
+    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:13px;font-weight:700;color:#334155;text-align:center}`;
     const signatures = `<div class="sign-row"><div class="sign">Head of Department</div><div class="sign">Medical Director</div><div class="sign">Hospital Director</div></div>`;
     const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title><link rel="stylesheet" href="styles.css" /><style>${css}</style></head><body class="printing-only print-confidential"><main class="printable"><section class="card print-only report-content">${header}<h4 class="section-title">${title}</h4>${meta}${table}${signatures}</section></main></body></html>`;
     const w = window.open('', '_blank');
