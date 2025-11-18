@@ -1193,6 +1193,14 @@ function Vacations({ doctors, hospitals, departments, vacations, setVacations })
   const [filterHospitalId, setFilterHospitalId] = React.useState('');
   const [filterDepartmentName, setFilterDepartmentName] = React.useState('');
   const [toast, showToast] = useToast();
+  const [editingVac, setEditingVac] = React.useState(null);
+  const editSelectedDays = React.useMemo(() => {
+    if (!editingVac) return null;
+    const s = new Date(editingVac.start_date), e = new Date(editingVac.end_date);
+    const ms = e - s;
+    if (!Number.isFinite(ms) || ms < 0) return null;
+    return Math.round(ms / (1000 * 60 * 60 * 24)) + 1;
+  }, [editingVac]);
   const selectedDays = React.useMemo(() => {
     if (!start || !end) return null;
     const s = new Date(start), e = new Date(end);
@@ -1206,6 +1214,41 @@ function Vacations({ doctors, hospitals, departments, vacations, setVacations })
     const next = [...vacations, v]; setVacations(next); store.write('vacations', next);
     showToast('Vacation added'); setDoctorId(''); setStart(''); setEnd(''); setStatus('requested'); setVacationType('annual'); };
   const updateStatus = (id, nextStatus) => { const next = vacations.map(v => v.id === id ? { ...v, status: nextStatus } : v); setVacations(next); store.write('vacations', next); showToast(`Vacation ${nextStatus}`); };
+  const openVacationEdit = (v) => { setEditingVac({ id: v.id, start_date: v.start_date, end_date: v.end_date, type: v.type || 'annual' }); };
+  const saveVacationEdit = () => {
+    if (!editingVac) return;
+    const { id, start_date, end_date, type } = editingVac;
+    if (!start_date || !end_date || new Date(end_date) < new Date(start_date)) { showToast('Invalid date range', false); return; }
+    const next = vacations.map(x => x.id === id ? { ...x, start_date, end_date, type } : x);
+    setVacations(next); store.write('vacations', next); showToast('Vacation updated');
+    setEditingVac(null);
+  };
+  const cancelVacationEdit = () => { setEditingVac(null); };
+  React.useEffect(() => {
+    if (!editingVac) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    const onKey = (e) => { if (e.key === 'Escape') setEditingVac(null); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = originalOverflow || '';
+      document.body.classList.remove('modal-open');
+    };
+  }, [editingVac]);
+  const daysForVac = (v) => {
+    const s = new Date(v.start_date), e = new Date(v.end_date);
+    const ms = e - s;
+    if (!Number.isFinite(ms) || ms < 0) return '-';
+    return Math.round(ms / (1000 * 60 * 60 * 24)) + 1;
+  };
+  const typeLabel = (t) => ({
+    annual: 'Annual',
+    sick_leave: 'Sick Leave',
+    emergency: 'Emergency Leave',
+    maternity_leave: 'Maternity Leave'
+  })[t] || t;
   const visibleDoctors = React.useMemo(() => {
     const selectedHospitalId = Number(filterHospitalId) || null;
     const selectedHospitalName = hospitals?.find(h => h.id === selectedHospitalId)?.name || null;
@@ -1237,15 +1280,69 @@ function Vacations({ doctors, hospitals, departments, vacations, setVacations })
       </div>
       <div className="row"><label>Type of Vacation</label><select value={vacationType} onChange={e => setVacationType(e.target.value)}>
         <option value="annual">Annual</option>
-        <option value="emergency">Emergency</option>
         <option value="sick_leave">Sick Leave</option>
+        <option value="emergency">Emergency Leave</option>
+        <option value="maternity_leave">Maternity Leave</option>
       </select></div>
       <button type="submit"><i className="bi bi-plus-circle"></i>Add Vacation</button>
     </form>
     <div className="list"><h3>Vacation Requests</h3>
-      <table><thead><tr><th>Doctor</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody>{vacations.filter(v => v.status !== 'planned').map(v => (<tr key={v.id}><td>{(doctors.find(d => d.id === v.doctor_id) || {}).name || v.doctor_id}</td><td>{v.start_date}</td><td>{v.end_date}</td><td><strong>{v.status}</strong></td><td><button className="btn btn-approve" onClick={() => updateStatus(v.id, 'approved')}><i className="bi bi-check-circle"></i>Approve</button> <button className="btn btn-deny" onClick={() => updateStatus(v.id, 'denied')}><i className="bi bi-x-circle"></i>Deny</button></td></tr>))}</tbody>
+      <table><thead><tr><th>Doctor</th><th>Start</th><th>End</th><th>Days</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>{vacations.filter(v => v.status !== 'planned').map(v => (
+          <tr key={v.id}>
+            <td>{(doctors.find(d => d.id === v.doctor_id) || {}).name || v.doctor_id}</td>
+            <td>{v.start_date}</td>
+            <td>{v.end_date}</td>
+            <td>{daysForVac(v)}</td>
+            <td>{typeLabel(v.type)}</td>
+            <td><strong>{v.status}</strong></td>
+            <td>
+              {v.status === 'requested' ? (
+                <>
+                  <button className="btn" onClick={() => openVacationEdit(v)}><i className="bi bi-pencil"></i>Edit</button>
+                  <span style={{ marginLeft: 6 }}></span>
+                  <button className="btn btn-approve" onClick={() => updateStatus(v.id, 'approved')}><i className="bi bi-check2-circle"></i>Approve</button>
+                  <button className="btn btn-deny" style={{ marginLeft: 6 }} onClick={() => updateStatus(v.id, 'denied')}><i className="bi bi-x-circle"></i>Deny</button>
+                </>
+              ) : v.status === 'approved' ? (
+                <>
+                  <button className="btn" onClick={() => openVacationEdit(v)}><i className="bi bi-pencil"></i>Edit</button>
+                </>
+              ) : null}
+            </td>
+          </tr>
+        ))}</tbody>
       </table>
+      {editingVac && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setEditingVac(null)}>
+          <div className="modal" style={{ width: 'min(600px, 95vw)' }} onClick={(e) => e.stopPropagation()}>
+            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>Edit Vacation</h3>
+              <div>
+                <button type="button" className="btn" onClick={cancelVacationEdit}><i className="bi bi-x-lg"></i>Close</button>
+              </div>
+            </header>
+            <div className="modal-body">
+              <div className="row"><label>Start Date</label><input type="date" value={editingVac.start_date} onChange={e => setEditingVac(prev => ({ ...prev, start_date: e.target.value }))} /></div>
+              <div className="row"><label>End Date</label><input type="date" value={editingVac.end_date} onChange={e => setEditingVac(prev => ({ ...prev, end_date: e.target.value }))} /></div>
+              <div className="row"><label>Type of Vacation</label><select value={editingVac.type} onChange={e => setEditingVac(prev => ({ ...prev, type: e.target.value }))}>
+                <option value="annual">Annual</option>
+                <option value="sick_leave">Sick Leave</option>
+                <option value="emergency">Emergency Leave</option>
+                <option value="maternity_leave">Maternity Leave</option>
+              </select></div>
+              <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
+                Selected: {editingVac.start_date || '—'} to {editingVac.end_date || '—'}{editSelectedDays ? ` (${editSelectedDays} day${editSelectedDays === 1 ? '' : 's'})` : ''}
+              </div>
+            </div>
+            <footer style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button type="button" className="btn-view" onClick={saveVacationEdit} disabled={!editingVac || !editingVac.start_date || !editingVac.end_date || (new Date(editingVac.end_date) < new Date(editingVac.start_date))}><i className="bi bi-save"></i>Save</button>
+              <button type="button" className="btn btn-deny" onClick={() => { if (!window.confirm('Remove this vacation?')) return; const next = vacations.filter(x => x.id !== editingVac.id); setVacations(next); store.write('vacations', next); showToast('Vacation removed'); setEditingVac(null); }}><i className="bi bi-trash"></i>Delete</button>
+              <button type="button" className="btn btn-deny" onClick={cancelVacationEdit}><i className="bi bi-x-circle"></i>Cancel</button>
+            </footer>
+          </div>
+        </div>
+      )}
     </div>
     <footer>{toast && <Toast message={toast.msg} ok={toast.ok} />}</footer>
   </>);
@@ -1402,6 +1499,7 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
   };
   const removeAssignment = (slotCode, doctorId) => {
     if (!selectedDate) return;
+    if (!window.confirm('Remove this assignment?')) return;
     const idNum = Number(doctorId);
     setAssignments(prev => {
       const prevDay = prev[selectedDate] || {};
@@ -2103,6 +2201,7 @@ function OnCall({ hospitals, departments, duties, doctors, shifts, setDuties, va
   };
   const removeDoctor = (doctorId) => {
     if (!selectedDate) return;
+    if (!window.confirm('Remove this assignment?')) return;
     const idNum = Number(doctorId);
     setAssigned(prev => ({ ...prev, [selectedDate]: (prev[selectedDate]||[]).filter(id => id !== idNum) }));
   };
@@ -2883,10 +2982,10 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
   );
 }
 
-function Bar({ label, value, max }) { const pct = max > 0 ? Math.round((value / max) * 100) : 0; return (
+function Bar({ label, value, max, showPercent = true }) { const pct = max > 0 ? Math.round((value / max) * 100) : 0; return (
   <div style={{ marginBottom: 10 }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-      <span>{label}</span><span>{value} ({pct}%)</span>
+      <span>{label}</span><span>{showPercent ? `${value} (${pct}%)` : `${value}`}</span>
     </div>
     <div className="bar-track">
       <div className="bar-fill" style={{ width: pct + '%' }}></div>
@@ -3108,6 +3207,31 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
     const overlapping = Object.values(overlapByKey).filter(n => n > 1).length;
     return { total, onCalls, regular, overlapping };
   }, [dutiesInMonth, monthlyOnCalls, monthlyDuties]);
+  const doctorsPerHospital = React.useMemo(() => {
+    const map = new Map();
+    filteredDoctors.forEach(d => {
+      const name = (() => {
+        if (d.hospital_id != null) {
+          const h = (hospitals || []).find(x => Number(x.id) === Number(d.hospital_id));
+          if (h && h.name) return String(h.name);
+        }
+        return String(d.hospital || '').trim() || 'Unspecified';
+      })();
+      map.set(name, (map.get(name) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [filteredDoctors, hospitals]);
+  const departmentsPerHospital = React.useMemo(() => {
+    const map = new Map();
+    (departments || []).forEach(dep => {
+      const hid = Number(dep.hospital_id);
+      if (selectedHospitalId && hid !== Number(selectedHospitalId)) return;
+      const h = (hospitals || []).find(x => Number(x.id) === hid);
+      const name = h && h.name ? String(h.name) : 'Unspecified';
+      map.set(name, (map.get(name) || 0) + 1);
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [departments, hospitals, selectedHospitalId]);
   const getDoctorPhone = (id) => {
     const doc = (doctors || []).find(doc => Number(doc.id) === Number(id));
     return (doc && doc.phone) ? doc.phone : '-';
@@ -3164,6 +3288,44 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
   const approvedVacationDays = Math.round(filteredVacations.reduce((acc, v) => acc + (v.status === 'approved' ? ((new Date(v.end_date) - new Date(v.start_date)) / (1000*60*60*24) + 1) : 0), 0));
   const totalDuties = filteredDuties.length;
   const specialtiesCount = new Set(filteredDoctors.map(d => d.specialty || 'Unspecified')).size;
+  const hospitalsInScopeCount = selectedHospitalId ? 1 : new Set(filteredDoctors.map(d => String(d.hospital_id ?? d.hospital)).filter(Boolean)).size;
+  const departmentsInScopeCount = (() => {
+    if (filterDepartmentName) return 1;
+    if (selectedHospitalId) return (departments || []).filter(d => Number(d.hospital_id) === selectedHospitalId).length;
+    return new Set((departments || []).map(d => String(d.name || '').trim()).filter(Boolean)).size;
+  })();
+  const approvedCount = filteredVacations.filter(v => v.status === 'approved').length;
+  const requestedCount = filteredVacations.filter(v => v.status === 'requested').length;
+  const deniedCount = filteredVacations.filter(v => v.status === 'denied').length;
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const normalizeType = (t) => {
+    const s = String(t || '').toLowerCase().trim().replace(/\s+/g, '_');
+    if (s === 'annual' || s === 'annual_leave') return 'annual';
+    if (s === 'sick' || s === 'sick_leave' || s === 'sickleave') return 'sick_leave';
+    if (s === 'emergency' || s === 'emergency_leave' || s === 'emergencyleave') return 'emergency';
+    if (s === 'maternity' || s === 'maternity_leave' || s === 'maternityleave') return 'maternity_leave';
+    return 'annual';
+  };
+  const typeDays = { annual: 0, sick_leave: 0, emergency: 0, maternity_leave: 0 };
+  const typeCounts = { annual: 0, sick_leave: 0, emergency: 0, maternity_leave: 0 };
+  filteredVacations.forEach(v => {
+    if (v.status === 'approved') {
+      const t = normalizeType(v.type);
+      const days = Math.round((new Date(v.end_date) - new Date(v.start_date)) / msPerDay) + 1;
+      typeDays[t] = (typeDays[t] || 0) + (Number.isFinite(days) && days > 0 ? days : 0);
+      typeCounts[t] = (typeCounts[t] || 0) + 1;
+    }
+  });
+  const allApprovedDays = Object.values(typeDays).reduce((a, b) => a + b, 0);
+  const totalRequests = filteredVacations.length;
+  const typeAvgDays = {
+    annual: typeCounts.annual ? Math.round((typeDays.annual / typeCounts.annual) * 10) / 10 : 0,
+    sick_leave: typeCounts.sick_leave ? Math.round((typeDays.sick_leave / typeCounts.sick_leave) * 10) / 10 : 0,
+    emergency: typeCounts.emergency ? Math.round((typeDays.emergency / typeCounts.emergency) * 10) / 10 : 0,
+    maternity_leave: typeCounts.maternity_leave ? Math.round((typeDays.maternity_leave / typeCounts.maternity_leave) * 10) / 10 : 0,
+  };
+  const maxAvgDays = Math.max(1, typeAvgDays.annual, typeAvgDays.sick_leave, typeAvgDays.emergency, typeAvgDays.maternity_leave);
+  const avgDaysPerApproved = approvedCount ? Math.round((approvedVacationDays / approvedCount) * 10) / 10 : 0;
 
   return (
       <main className="dashboard-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, padding: 16, justifyContent: 'center', maxWidth: 1200, margin: '0 auto' }}>
@@ -3216,10 +3378,52 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
       <Section title="Key Metrics">
         <div className="kpi-grid">
           <KPI label="Total Doctors" value={totalDoctors} />
-          <KPI label="Active Doctors" value={activeDoctors} />
-          <KPI label="Approved Vacation Days" value={approvedVacationDays} />
-          <KPI label="Duties Generated" value={totalDuties} />
           <KPI label="Specialties" value={specialtiesCount} />
+          <KPI label="Hospitals" value={hospitalsInScopeCount} />
+          <KPI label="Departments" value={departmentsInScopeCount} />
+        </div>
+        <div className="card" style={{ marginTop: 8 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Doctors per Hospital</div>
+          {doctorsPerHospital.map(([name, count]) => (
+            React.createElement(Bar, { key: 'h-' + name, label: name, value: count, max: Math.max(1, totalDoctors) })
+          ))}
+          {doctorsPerHospital.length === 0 && React.createElement('div', { style: { color: 'var(--muted)', fontSize: 12, marginTop: 6 } }, 'No hospitals in scope')}
+        </div>
+        <div className="card" style={{ marginTop: 8 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Departments per Hospital</div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {departmentsPerHospital.map(([name, count]) => (
+              React.createElement('li', { key: 'dh-' + name, style: { display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed var(--border)' } },
+                React.createElement('span', null, name),
+                React.createElement('span', { className: 'chip chip-mini' }, count)
+              )
+            ))}
+            {departmentsPerHospital.length === 0 && React.createElement('li', { style: { color: 'var(--muted)' } }, 'No departments in scope')}
+          </ul>
+        </div>
+        <div className="card" style={{ marginTop: 8 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Vacations Analysis</div>
+          <div className="kpi-grid" style={{ marginBottom: 8 }}>
+            <KPI label="Now on Vacation" value={vacationTodayCount} />
+            <KPI label="Avg Days / Approved" value={avgDaysPerApproved} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>By Type (Average Days)</div>
+              {React.createElement(Bar, { label: 'Annual', value: typeAvgDays.annual, max: maxAvgDays, showPercent: false })}
+              {React.createElement(Bar, { label: 'Sick Leave', value: typeAvgDays.sick_leave, max: maxAvgDays, showPercent: false })}
+              {React.createElement(Bar, { label: 'Emergency Leave', value: typeAvgDays.emergency, max: maxAvgDays, showPercent: false })}
+              {React.createElement(Bar, { label: 'Maternity Leave', value: typeAvgDays.maternity_leave, max: maxAvgDays, showPercent: false })}
+              {approvedCount === 0 && React.createElement('div', { style: { color: 'var(--muted)', fontSize: 12, marginTop: 6 } }, 'No approved vacation requests')}
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>By Status</div>
+              {React.createElement(Bar, { label: 'Requested', value: requestedCount, max: Math.max(1, totalRequests) })}
+              {React.createElement(Bar, { label: 'Approved', value: approvedCount, max: Math.max(1, totalRequests) })}
+              {React.createElement(Bar, { label: 'Denied', value: deniedCount, max: Math.max(1, totalRequests) })}
+              {totalRequests === 0 && React.createElement('div', { style: { color: 'var(--muted)', fontSize: 12, marginTop: 6 } }, 'No vacation requests')}
+            </div>
+          </div>
         </div>
         <div className="card" style={{ marginTop: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
