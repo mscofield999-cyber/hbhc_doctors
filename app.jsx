@@ -2771,8 +2771,8 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
     .year-bar .tick{position:absolute;top:-3px;bottom:-3px;width:1px;background:#cbd5e1}
     .year-bar .month-label{position:absolute;top:100%;transform:translateX(-50%);font-size:9px;color:#475569}
     .year-bar .highlight{position:absolute;top:2px;bottom:2px;border-radius:2px}
-    .sign-row{display:flex;gap:12px;margin-top:12px}
-    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:11px;color:#334155;text-align:center}`;
+    .sign-row{display:flex;gap:12px;margin-top:32px}
+    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:17px;font-weight:700;color:#334155;text-align:center}`;
     const header = `<div class="print-header">
       <img src="${baseUrl}hbhc-logo.png" alt="HBHC Logo" />
       <div>
@@ -2833,8 +2833,8 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
     .year-bar .tick{position:absolute;top:-3px;bottom:-3px;width:1px;background:#cbd5e1}
     .year-bar .month-label{position:absolute;top:100%;transform:translateX(-50%);font-size:9px;color:#475569}
     .year-bar .highlight{position:absolute;top:2px;bottom:2px;border-radius:2px}
-    .sign-row{display:flex;gap:12px;margin-top:12px}
-    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:6px;font-size:11px;color:#334155;text-align:center}`;
+    .sign-row{display:flex;gap:12px;margin-top:32px}
+    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:17px;font-weight:700;color:#334155;text-align:center}`;
     const signatures = `<div class="sign-row"><div class="sign">Head of Department</div><div class="sign">Medical Director</div><div class="sign">Hospital Director</div></div>`;
     const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title><base href="${baseUrl}"><link rel="stylesheet" href="${baseUrl}styles.css" /><style>${css}</style></head><body class="printing-only"><main class="printable"><section class="card print-only report-content">${header}${tableHtml}${signatures}</section></main></body></html>`;
     const w = window.open('', '_blank'); if (!w) return; w.document.open(); w.document.write(docHtml); w.document.close(); w.focus(); setTimeout(() => { w.print(); w.close(); }, 500);
@@ -3063,8 +3063,8 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
       : `<table class="table duties-table"><thead><tr><th>Date</th><th>Day</th><th>Morning</th><th>Evening</th><th>Night</th></tr></thead><tbody>${dutiesRows}</tbody></table>`;
 
     const css = `@page{size:A4;margin:3mm 10mm 10mm 10mm}
-    .sign-row{display:flex;gap:12px;margin-top:24px}
-    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:13px;font-weight:700;color:#334155;text-align:center}`;
+    .sign-row{display:flex;gap:12px;margin-top:32px}
+    .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:17px;font-weight:700;color:#334155;text-align:center}`;
     const signatures = `<div class="sign-row"><div class="sign">Head of Department</div><div class="sign">Medical Director</div><div class="sign">Hospital Director</div></div>`;
     const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title><link rel="stylesheet" href="styles.css" /><style>${css}</style></head><body class="printing-only print-confidential"><main class="printable"><section class="card print-only report-content">${header}<h4 class="section-title">${title}</h4>${meta}${table}${signatures}</section></main></body></html>`;
     const w = window.open('', '_blank');
