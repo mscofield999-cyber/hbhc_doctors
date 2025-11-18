@@ -80,7 +80,11 @@ body.bg-watermark::before {
 .topnav .view-select { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; background: #fff; color: var(--text); }
 .topnav .view-select:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring); }
 /* Forced view overrides */
-.view-desktop .topnav .nav-toggle { display: inline-flex; }
+.view-desktop .topnav .nav-toggle { display: none; }
+.view-desktop .topnav { position: relative; }
+.view-desktop .topnav .dropdown { display: flex !important; position: static; flex-direction: row; gap: var(--space-2); background: transparent; border: 0; box-shadow: none; padding: 0; }
+.view-desktop .topnav .dropdown .nav-link { display: inline-block; width: auto; white-space: nowrap; padding: 8px 12px; }
+.view-desktop .topnav .nav-toggle { margin-left: 0; }
 .view-mobile .topnav { position: relative; }
 .view-mobile .topnav .nav-toggle { display: inline-flex; align-items: center; gap: 6px; flex-direction: row; margin-left: 1cm; }
 .view-mobile .topnav .dropdown { display: none; position: absolute; top: 100%; left: 0; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); padding: 8px 10px; flex-direction: column; gap: 6px; width: max-content; min-width: 180px; max-width: 90vw; }
