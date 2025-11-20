@@ -46,11 +46,18 @@
         <option value="desktop">Desktop</option>
         <option value="mobile">Mobile</option>
       </select>
+      <span class="user-panel"></span>
+      <select class="view-role" aria-label="View as" hidden>
+        <option value="">Admin (default)</option>
+        <option value="head">Head of Department</option>
+        <option value="employee">Employee</option>
+      </select>
       <div class="dropdown">
         <a href="#/" class="nav-link"><i class="bi bi-house-door"></i>Home</a>
         <a href="#/data-entry" class="nav-link"><i class="bi bi-database"></i>Data</a>
         <a href="#/operations" class="nav-link"><i class="bi bi-gear"></i>Operations</a>
         <a href="#/dashboard" class="nav-link"><i class="bi bi-bar-chart"></i>Dashboard</a>
+        <a href="#/login" class="nav-link"><i class="bi bi-person"></i>Login</a>
       </div>
     </nav>
   </header>
@@ -81,6 +88,75 @@
             select.value = cur;
             select.addEventListener('change', function(){ applySelect(select.value); });
           }
+          // Render user panel and handle logout
+          var userPanel = nav.querySelector('.user-panel');
+          var renderUser = function(){
+            if (!userPanel) return;
+            var user = localStorage.getItem('auth_user');
+            var rolePrev = (localStorage.getItem('role_preview') || '').toLowerCase();
+            if (user) {
+              var viewTag = rolePrev ? ' <span class="chip chip-mini">view as: '+rolePrev+'</span>' : '';
+              userPanel.innerHTML = '<span class="chip">'+user+'</span>'+viewTag+' <button type="button" class="btn btn-logout"><i class="bi bi-box-arrow-right"></i>Logout</button>';
+              var lo = userPanel.querySelector('.btn-logout');
+              if (lo) lo.addEventListener('click', function(){ if (typeof window.logout === 'function') { window.logout(); } else { try { localStorage.removeItem('auth_token'); localStorage.removeItem('auth_user'); localStorage.removeItem('auth_role'); } catch {}; window.location.hash = '#/login'; } });
+            } else {
+              userPanel.innerHTML = '';
+            }
+          };
+          renderUser();
+          window.renderUserPanel = renderUser;
+          // Role preview select for admin
+          var roleSel = nav.querySelector('.view-role');
+          var authRole = (localStorage.getItem('auth_role') || '').toLowerCase();
+          if (roleSel) {
+            if (authRole === 'admin') {
+              roleSel.hidden = false;
+              var curPrev = (localStorage.getItem('role_preview') || '').toLowerCase();
+              roleSel.value = curPrev || '';
+              roleSel.addEventListener('change', function(){
+                try { localStorage.setItem('role_preview', roleSel.value || ''); } catch {}
+                renderUser();
+                // Force re-evaluation
+                window.dispatchEvent(new StorageEvent('storage', { key: 'role_preview', newValue: roleSel.value || '' }));
+                try { /* refresh current view */ window.location.hash = window.location.hash || '#/admin'; } catch {}
+              });
+            } else {
+              roleSel.hidden = true;
+            }
+          }
+          var updateNavVisibility = function(){
+            var authed = !!localStorage.getItem('auth_token');
+            var route = window.location.hash || '#/';
+            if (!authed || route === '#/login') {
+              nav.classList.add('locked');
+            } else {
+              nav.classList.remove('locked');
+            }
+          };
+          updateNavVisibility();
+          var ensureAdminLink = function(){
+            var dropdown = nav.querySelector('.dropdown');
+            if (!dropdown) return;
+            var role = (localStorage.getItem('auth_role')||'').toLowerCase();
+            var userId = (localStorage.getItem('auth_user')||'').toLowerCase();
+            var isAdmin = role === 'admin' || userId === 'admin' || userId.startsWith('admin@');
+            var link = dropdown.querySelector('a.nav-link[href="#/admin-control"]');
+            if (isAdmin) {
+              if (!link) {
+                link = document.createElement('a');
+                link.href = '#/admin-control';
+                link.className = 'nav-link';
+                link.innerHTML = '<i class="bi bi-shield-lock"></i>Admin Control';
+                link.addEventListener('click', function(ev){ ev.preventDefault(); window.location.hash = '#/admin-control'; });
+                dropdown.appendChild(link);
+              }
+            } else {
+              if (link) link.remove();
+            }
+          };
+          ensureAdminLink();
+          window.addEventListener('storage', function(e){ if (e.key === 'auth_user' || e.key === 'auth_token' || e.key === 'auth_role') { renderUser(); updateNavVisibility(); ensureAdminLink(); } });
+          window.addEventListener('hashchange', updateNavVisibility);
           // Close dropdown on outside click
           document.addEventListener('click', function(e) {
             if (!nav.classList.contains('open')) return;
@@ -89,6 +165,17 @@
               btn.setAttribute('aria-expanded', 'false');
             }
           });
+          // Close dropdown after clicking any nav link or control inside it
+          var dd = nav.querySelector('.dropdown');
+          if (dd) {
+            dd.addEventListener('click', function(evt){
+              var t = evt.target;
+              if (t.closest('a.nav-link') || t.closest('button') || t.closest('select')) {
+                nav.classList.remove('open');
+                btn.setAttribute('aria-expanded', 'false');
+              }
+            });
+          }
           // Close on Escape key
           document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && nav.classList.contains('open')) {

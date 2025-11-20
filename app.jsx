@@ -186,7 +186,7 @@ function useToast() {
 }
 
 
-function Hospitals({ hospitals, setHospitals, doctors, setDoctors, departments }) {
+function Hospitals({ hospitals, setHospitals, doctors, setDoctors, departments, canAdd = true, canEdit = true, canRemove = true }) {
   const [name, setName] = React.useState('');
   const [toast, showToast] = useToast();
   const [editId, setEditId] = React.useState(null);
@@ -217,10 +217,12 @@ function Hospitals({ hospitals, setHospitals, doctors, setDoctors, departments }
     const next = [...hospitals, h]; setHospitals(next); store.write('hospitals', next);
     showToast('Hospital added'); setName(''); };
   return (<>
-    <form onSubmit={add}>
-      <div className="row"><label>Hospital Name</label><input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., City General Hospital" /></div>
-      <button type="submit"><i className="bi bi-plus-circle"></i>Add Hospital</button>
-    </form>
+    {canAdd && (
+      <form onSubmit={add}>
+        <div className="row"><label>Hospital Name</label><input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., City General Hospital" /></div>
+        <button type="submit"><i className="bi bi-plus-circle"></i>Add Hospital</button>
+      </form>
+    )}
     <div className="list">
       <h3>Hospitals</h3>
       <div className="card-grid">
@@ -237,6 +239,8 @@ function Hospitals({ hospitals, setHospitals, doctors, setDoctors, departments }
             setHospitals={setHospitals}
             doctors={doctors}
             setDoctors={setDoctors}
+            canEdit={canEdit}
+            canRemove={canRemove}
           />
         ))}
       </div>
@@ -245,7 +249,7 @@ function Hospitals({ hospitals, setHospitals, doctors, setDoctors, departments }
   </>);
 }
 
-function Specialties({ specialties, setSpecialties, doctors, setDoctors }) {
+function Specialties({ specialties, setSpecialties, doctors, setDoctors, canAdd = true, canEdit = true, canRemove = true }) {
   const [name, setName] = React.useState('');
   const [toast, showToast] = useToast();
   const [editId, setEditId] = React.useState(null);
@@ -303,11 +307,13 @@ function Specialties({ specialties, setSpecialties, doctors, setDoctors }) {
     const next = [...specialties, s]; setSpecialties(next); store.write('specialties', next);
     showToast('Specialty added'); setName(''); };
   return (<>
-    <form onSubmit={add}>
-      <div className="row"><label>Specialty Name</label><input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., Cardiology" /></div>
-      <button type="submit"><i className="bi bi-plus-circle"></i>Add Specialty</button>
-      <button type="button" style={{ marginLeft: 8 }} onClick={addMissingFromDoctors}><i className="bi bi-list-check"></i>Add All Missing Specialties</button>
-    </form>
+    {canAdd && (
+      <form onSubmit={add}>
+        <div className="row"><label>Specialty Name</label><input value={name} onChange={e => setName(e.target.value)} required placeholder="e.g., Cardiology" /></div>
+        <button type="submit"><i className="bi bi-plus-circle"></i>Add Specialty</button>
+        <button type="button" style={{ marginLeft: 8 }} onClick={addMissingFromDoctors}><i className="bi bi-list-check"></i>Add All Missing Specialties</button>
+      </form>
+    )}
     <div className="list">
       <h3>Specialties</h3>
       <div className="card-grid">
@@ -322,11 +328,11 @@ function Specialties({ specialties, setSpecialties, doctors, setDoctors }) {
             ) : (
               <>
                 <div className="name">{s.name}</div>
-                <button className="kebab-btn" type="button" onClick={() => setOpenId(prev => prev === s.id ? null : s.id)} aria-label="Options" aria-expanded={openId === s.id}>⋮</button>
-                {openId === s.id && (
+                { (canEdit || canRemove) && <button className="kebab-btn" type="button" onClick={() => setOpenId(prev => prev === s.id ? null : s.id)} aria-label="Options" aria-expanded={openId === s.id}>⋮</button> }
+                {openId === s.id && (canEdit || canRemove) && (
                   <div className="kebab-menu">
-                    <button className="kebab-item" type="button" onClick={() => { startEdit(s); setOpenId(null); }}><i className="bi bi-pencil"></i>Edit</button>
-                    <button className="kebab-item" type="button" onClick={() => removeSpecialty(s.id)}>Remove</button>
+                    {canEdit && <button className="kebab-item" type="button" onClick={() => { startEdit(s); setOpenId(null); }}><i className="bi bi-pencil"></i>Edit</button>}
+                    {canRemove && <button className="kebab-item" type="button" onClick={() => removeSpecialty(s.id)}>Remove</button>}
                   </div>
                 )}
               </>
@@ -339,7 +345,7 @@ function Specialties({ specialties, setSpecialties, doctors, setDoctors }) {
   </>);
 }
 
-function Departments({ departments, setDepartments, doctors, hospitals }) {
+function Departments({ departments, setDepartments, doctors, hospitals, canAdd = true, canEdit = true, canRemove = true }) {
   const [name, setName] = React.useState('');
   const [headQuery, setHeadQuery] = React.useState('');
   const [headId, setHeadId] = React.useState(null);
@@ -566,6 +572,7 @@ function Departments({ departments, setDepartments, doctors, hospitals }) {
   const onPickEditHead = (doc) => { setEditHeadQuery(doc.name); setEditHeadId(doc.id); setShowEditMatches(false); };
   
   return (<>
+    {canAdd && (
     <form onSubmit={add}>
       <div className="row"><label>Hospital</label>
         <select value={hospitalId} onChange={e => setHospitalId(e.target.value)} required>
@@ -593,6 +600,7 @@ function Departments({ departments, setDepartments, doctors, hospitals }) {
       )}
       <button type="submit"><i className="bi bi-plus-circle"></i>Add Department</button>
     </form>
+    )}
     <div className="list">
       <h3>Departments</h3>
       <div className="card-grid">
@@ -629,12 +637,12 @@ function Departments({ departments, setDepartments, doctors, hospitals }) {
                 <div className="meta">Hospital: {getHospitalName(d.hospital_id) || '-'}</div>
                 <div className="meta">Head: {d.head || getDoctorName(d.head_id) || '-'}</div>
                 <button className="btn-view" type="button" onClick={() => { window.location.hash = `#/assign/${d.id}`; }} style={{ marginRight: 8 }}><i className="bi bi-person-plus"></i>Assign Doctors</button>
-                <button className="kebab-btn" type="button" onClick={() => setOpenId(prev => prev === d.id ? null : d.id)} aria-label="Options" aria-expanded={openId === d.id}>⋮</button>
-                {openId === d.id && (
+                {(canEdit || canRemove) && <button className="kebab-btn" type="button" onClick={() => setOpenId(prev => prev === d.id ? null : d.id)} aria-label="Options" aria-expanded={openId === d.id}>⋮</button>}
+                {openId === d.id && (canEdit || canRemove) && (
                   <div className="kebab-menu">
-                    <button className="kebab-item" type="button" onClick={() => { startEdit(d); setOpenId(null); }}><i className="bi bi-pencil"></i>Edit</button>
+                    {canEdit && <button className="kebab-item" type="button" onClick={() => { startEdit(d); setOpenId(null); }}><i className="bi bi-pencil"></i>Edit</button>}
                     <button className="kebab-item" type="button" onClick={() => { window.location.hash = `#/assign/${d.id}`; }}><i className="bi bi-person-plus"></i>Assign Doctors</button>
-                    <button className="kebab-item" type="button" onClick={() => removeDepartment(d.id)}><i className="bi bi-trash"></i>Remove</button>
+                    {canRemove && <button className="kebab-item" type="button" onClick={() => removeDepartment(d.id)}><i className="bi bi-trash"></i>Remove</button>}
                   </div>
                 )}
               </>
@@ -897,7 +905,7 @@ function DepartmentAssignPage({ departmentId, departments = [], setDepartments, 
   );
 }
 
-function Doctors({ doctors, setDoctors, specialties, setSpecialties, hospitals, setHospitals, departments, setDepartments }) {
+function Doctors({ doctors, setDoctors, specialties, setSpecialties, hospitals, setHospitals, departments, setDepartments, canImport = true, canAddDoctors = true, canEditDoctors = true, canRemoveDoctors = true }) {
   const [name, setName] = React.useState('');
   const [specialtyId, setSpecialtyId] = React.useState('');
   const [grade, setGrade] = React.useState('');
@@ -1113,21 +1121,23 @@ function Doctors({ doctors, setDoctors, specialties, setSpecialties, hospitals, 
     });
   }, [doctors, listQuery, filterHospitalId, filterDepartmentName, hospitals, departments]);
   return (<>
+    {canImport && (
     <div className="row">
       <label>Import Doctors (CSV or Excel)</label>
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => importDoctorsFromFile(e.target.files[0])} />
       <button type="button" onClick={() => { if (fileInputRef.current && fileInputRef.current.files[0]) importDoctorsFromFile(fileInputRef.current.files[0]); }}><i className="bi bi-file-earmark-arrow-up"></i>Import</button>
       <button type="button" className="btn btn-deny" onClick={clearAllDoctors}><i className="bi bi-person-x"></i>Clear All Doctors</button>
     </div>
+    )}
     <form onSubmit={add}>
-      <div className="row"><label>Name</label><input value={name} onChange={e => setName(e.target.value)} required /></div>
+      {canAddDoctors && <div className="row"><label>Name</label><input value={name} onChange={e => setName(e.target.value)} required /></div>}
       <div className="row"><label>Specialty</label><select value={specialtyId} onChange={e => setSpecialtyId(e.target.value)} required><option value="">Select specialty</option>{specialties.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
       <div className="row"><label>Grade</label><input value={grade} onChange={e => setGrade(e.target.value)} required placeholder="e.g., Consultant" /></div>
       <div className="row"><label>Phone Number</label><input value={phone} onChange={e => setPhone(e.target.value)} required placeholder="e.g., +1 555 0100" /></div>
       <div className="row"><label>Job Number</label><input value={jobNumber} onChange={e => setJobNumber(e.target.value)} required placeholder="e.g., EMP-1234" /></div>
       <div className="row"><label>Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="e.g., alice@hospital.org" /></div>
       <div className="row"><label>Hospital</label><select value={hospitalId} onChange={e => setHospitalId(e.target.value)} required><option value="">Select hospital</option>{hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select></div>
-      <button type="submit"><i className="bi bi-plus-circle"></i>Add Doctor</button>
+      {canAddDoctors && <button type="submit"><i className="bi bi-plus-circle"></i>Add Doctor</button>}
     </form>
     <div className="list">
       <h3>Existing Doctors</h3>
@@ -1152,6 +1162,8 @@ function Doctors({ doctors, setDoctors, specialties, setSpecialties, hospitals, 
             setDoctors={setDoctors}
             specialties={specialties}
             hospitals={hospitals}
+            canEditDoctor={canEditDoctors}
+            canRemoveDoctor={canRemoveDoctors}
           />
         ))}
       </div>
@@ -1398,6 +1410,10 @@ function Schedule({ doctors, shifts, vacations, duties, setDuties }) {
 }
 
 function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDuties, vacations }) {
+  const authRoleDD = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const previewDD = (localStorage.getItem('role_preview') || '').toLowerCase();
+  const effRoleDD = authRoleDD === 'admin' && previewDD ? previewDD : authRoleDD;
+  const opsPermsDD = getOpsPermissions(effRoleDD);
   const [hospitalId, setHospitalId] = React.useState('');
   const [deptName, setDeptName] = React.useState('');
   const [format, setFormat] = React.useState('8H');
@@ -1483,6 +1499,7 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
   }, [duties, hospitalId, deptName, slotsForFormat]);
 
   const addAssignment = (slotCode, doctorId) => {
+    if (!opsPermsDD.assignAdd) { showToast('Not permitted', false); return; }
     if (!selectedDate || !doctorId) return;
     const idNum = Number(doctorId);
     const onLeave = Array.isArray(vacations)
@@ -1498,6 +1515,7 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
     setPicker(prev => ({ ...prev, [slotCode]: '' }));
   };
   const removeAssignment = (slotCode, doctorId) => {
+    if (!opsPermsDD.assignRemove) { showToast('Not permitted', false); return; }
     if (!selectedDate) return;
     if (!window.confirm('Remove this assignment?')) return;
     const idNum = Number(doctorId);
@@ -1510,6 +1528,7 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
   };
 
   const saveAssignments = () => {
+    if (!opsPermsDD.save) { showToast('Not permitted', false); return; }
     if (!selectedDate) return;
     const slotEntries = assignments[selectedDate] || {};
     const slotCodes = Object.keys(slotsForFormat);
@@ -1703,11 +1722,51 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
   );
 }
 
+function getDefaultPermissionsMatrix() {
+  return {
+    admin: { importData: true, exportBackup: true, resetData: true, hospitals: { add: true, edit: true, remove: true }, specialties: { add: true, edit: true, remove: true }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: true } },
+    head:  { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: false } },
+    employee: { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: false, edit: false, remove: false }, doctors: { add: false, edit: false, remove: false, import: false } }
+  };
+}
+function getPermissions(role) {
+  let matrix; try { matrix = JSON.parse(localStorage.getItem('permissions_matrix') || 'null'); } catch { matrix = null; }
+  const defs = getDefaultPermissionsMatrix();
+  return (matrix && matrix[role]) || defs[role] || defs.employee;
+}
+function getOpsPermissions(role) {
+  const defs = { admin: { assignAdd: true, assignRemove: true, save: true }, head: { assignAdd: true, assignRemove: true, save: true }, employee: { assignAdd: false, assignRemove: false, save: false } };
+  return defs[role] || defs.employee;
+}
+function logAudit(action, payload) {
+  const actor = localStorage.getItem('auth_user') || '';
+  const now = new Date().toISOString();
+  let logs; try { logs = JSON.parse(localStorage.getItem('audit_logs') || '[]'); } catch { logs = []; }
+  logs.push({ action, actor, time: now, payload });
+  try { localStorage.setItem('audit_logs', JSON.stringify(logs)); } catch {}
+}
 function AdminPage({ hospitals, setHospitals, specialties, setSpecialties, departments, setDepartments, shifts, setShifts, doctors, setDoctors }) {
   const [active, setActive] = React.useState('hospitals');
+  const authRole = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const preview = (localStorage.getItem('role_preview') || '').toLowerCase();
+  const userId = (localStorage.getItem('auth_user') || '').toLowerCase();
+  const effectiveRole = authRole === 'admin' && preview ? preview : authRole;
+  const authIsAdmin = authRole === 'admin' || userId === 'admin' || (userId.startsWith('admin@'));
+  const isAdmin = effectiveRole === 'admin';
+  const isHead = effectiveRole === 'head' || effectiveRole === 'hod' || effectiveRole === 'head_of_department';
+  const rolePerms = getPermissions(effectiveRole);
   const todayISO = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [toast, showToast] = useToast();
   const fileInputRef = React.useRef(null);
+  React.useEffect(() => {
+    try {
+      const startTab = localStorage.getItem('admin_tab');
+      if (authIsAdmin && startTab) {
+        setActive(startTab);
+        localStorage.removeItem('admin_tab');
+      }
+    } catch {}
+  }, []);
   const exportAllData = () => {
     try {
       const payload = {
@@ -1892,28 +1951,539 @@ function AdminPage({ hospitals, setHospitals, specialties, setSpecialties, depar
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ color: 'var(--muted)', fontSize: 12 }}>Today: {todayISO}</div>
           <div className="row" style={{ margin: 0, gap: 8, alignItems: 'center' }}>
-            <label style={{ margin: 0 }}>Import Data (CSV/XLSX)</label>
-            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => importDataFromFile(e.target.files[0])} />
-            <button type="button" onClick={() => { if (fileInputRef.current && fileInputRef.current.files[0]) importDataFromFile(fileInputRef.current.files[0]); }}><i className="bi bi-file-earmark-arrow-up"></i>Import</button>
-            <button type="button" className="btn" onClick={exportAllData}><i className="bi bi-file-earmark-arrow-down"></i>Export Backup</button>
-            <button type="button" className="btn btn-deny" onClick={resetAllData}><i className="bi bi-arrow-counterclockwise"></i>Reset Data</button>
+            {rolePerms.importData && (<>
+              <label style={{ margin: 0 }}>Import Data (CSV/XLSX)</label>
+              <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => importDataFromFile(e.target.files[0])} />
+              <button type="button" onClick={() => { if (fileInputRef.current && fileInputRef.current.files[0]) importDataFromFile(fileInputRef.current.files[0]); }}><i className="bi bi-file-earmark-arrow-up"></i>Import</button>
+            </>)}
+            {rolePerms.exportBackup && <button type="button" className="btn" onClick={exportAllData}><i className="bi bi-file-earmark-arrow-down"></i>Export Backup</button>}
+            {rolePerms.resetData && <button type="button" className="btn btn-deny" onClick={resetAllData}><i className="bi bi-arrow-counterclockwise"></i>Reset Data</button>}
           </div>
         </div>
         {active === 'hospitals' && (
-          <Section title="Hospitals"><Hospitals hospitals={hospitals} setHospitals={setHospitals} doctors={doctors} setDoctors={setDoctors} departments={departments} /></Section>
+          <Section title="Hospitals"><Hospitals hospitals={hospitals} setHospitals={setHospitals} doctors={doctors} setDoctors={setDoctors} departments={departments} canAdd={!!rolePerms.hospitals.add} canEdit={!!rolePerms.hospitals.edit} canRemove={!!rolePerms.hospitals.remove} /></Section>
         )}
         {active === 'specialties' && (
-          <Section title="Specialties"><Specialties specialties={specialties} setSpecialties={setSpecialties} doctors={doctors} setDoctors={setDoctors} /></Section>
+          <Section title="Specialties"><Specialties specialties={specialties} setSpecialties={setSpecialties} doctors={doctors} setDoctors={setDoctors} canAdd={!!rolePerms.specialties.add} canEdit={!!rolePerms.specialties.edit} canRemove={!!rolePerms.specialties.remove} /></Section>
         )}
         {active === 'departments' && (
-          <Section title="Departments"><Departments departments={departments} setDepartments={setDepartments} doctors={doctors} hospitals={hospitals} /></Section>
+          <Section title="Departments"><Departments departments={departments} setDepartments={setDepartments} doctors={doctors} hospitals={hospitals} canAdd={!!rolePerms.departments.add} canEdit={!!rolePerms.departments.edit} canRemove={!!rolePerms.departments.remove} /></Section>
         )}
         {active === 'doctors' && (
-          <Section title="Doctors"><Doctors doctors={doctors} setDoctors={setDoctors} specialties={specialties} setSpecialties={setSpecialties} hospitals={hospitals} setHospitals={setHospitals} departments={departments} setDepartments={setDepartments} /></Section>
+          <Section title="Doctors"><Doctors doctors={doctors} setDoctors={setDoctors} specialties={specialties} setSpecialties={setSpecialties} hospitals={hospitals} setHospitals={setHospitals} departments={departments} setDepartments={setDepartments} canImport={!!rolePerms.doctors.import} canAddDoctors={!!rolePerms.doctors.add} canEditDoctors={!!rolePerms.doctors.edit} canRemoveDoctors={!!rolePerms.doctors.remove} /></Section>
         )}
+        
         <footer>{toast && <Toast message={toast.msg} ok={toast.ok} />}</footer>
       </section>
     </main>
+  );
+}
+
+function AppOverviewPanel() {
+  const authRole = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const preview = (localStorage.getItem('role_preview') || '').toLowerCase();
+  const effectiveRole = authRole === 'admin' && preview ? preview : authRole;
+  let permsMatrix; try { permsMatrix = JSON.parse(localStorage.getItem('permissions_matrix') || 'null'); } catch { permsMatrix = null; }
+  const defaults = {
+    admin: { importData: true, exportBackup: true, resetData: true, hospitals: { add: true, edit: true, remove: true }, specialties: { add: true, edit: true, remove: true }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: true } },
+    head:  { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: false } },
+    employee: { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: false, edit: false, remove: false }, doctors: { add: false, edit: false, remove: false, import: false } }
+  };
+  const R = (permsMatrix && permsMatrix[effectiveRole]) || defaults[effectiveRole] || defaults.employee;
+  const goAdminControl = (tabId) => { try { localStorage.setItem('admin_panel', String(tabId||'')); } catch {} window.location.hash = '#/admin-control'; };
+  return (
+    <div>
+      <div className="list">
+        <table><thead><tr><th>Section</th><th>Link</th><th>Status</th></tr></thead><tbody>
+          <tr><td>Home</td><td><a href="#/">#/</a></td><td>Visible</td></tr>
+          <tr><td>Dashboard</td><td><a href="#/dashboard">#/dashboard</a></td><td>Visible</td></tr>
+          <tr><td>Operations</td><td><a href="#/operations">#/operations</a></td><td>Visible</td></tr>
+          <tr><td>Data Entry</td><td><a href="#/data-entry">#/data-entry</a></td><td>Visible</td></tr>
+          <tr><td>Diagnostics</td><td><a href="#/admin-control">#/admin-control</a></td><td>Inside Admin</td></tr>
+          <tr><td>Login</td><td><a href="#/login">#/login</a></td><td>Visible</td></tr>
+          <tr><td>Sign Up</td><td><a href="#/signup">#/signup</a></td><td>Visible</td></tr>
+          <tr><td>Admin Control</td><td><a href="#/admin-control">#/admin-control</a></td><td>{authRole==='admin'?'Visible':'Hidden'}</td></tr>
+        </tbody></table>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Data Entry Permissions ({effectiveRole||'unknown'})</div>
+        <div className="row"><label>Header: Import</label><span className="chip chip-mini">{R.importData?'Enabled':'Disabled'}</span></div>
+        <div className="row"><label>Header: Export Backup</label><span className="chip chip-mini">{R.exportBackup?'Enabled':'Disabled'}</span></div>
+        <div className="row"><label>Header: Reset Data</label><span className="chip chip-mini">{R.resetData?'Enabled':'Disabled'}</span></div>
+        <div className="row"><label>Hospitals</label><span className="chip chip-mini">Add {R.hospitals.add?'✓':'×'}</span><span className="chip chip-mini">Edit {R.hospitals.edit?'✓':'×'}</span><span className="chip chip-mini">Remove {R.hospitals.remove?'✓':'×'}</span></div>
+        <div className="row"><label>Specialties</label><span className="chip chip-mini">Add {R.specialties.add?'✓':'×'}</span><span className="chip chip-mini">Edit {R.specialties.edit?'✓':'×'}</span><span className="chip chip-mini">Remove {R.specialties.remove?'✓':'×'}</span></div>
+        <div className="row"><label>Departments</label><span className="chip chip-mini">Add {R.departments.add?'✓':'×'}</span><span className="chip chip-mini">Edit {R.departments.edit?'✓':'×'}</span><span className="chip chip-mini">Remove {R.departments.remove?'✓':'×'}</span></div>
+        <div className="row"><label>Doctors</label><span className="chip chip-mini">Add {R.doctors.add?'✓':'×'}</span><span className="chip chip-mini">Edit {R.doctors.edit?'✓':'×'}</span><span className="chip chip-mini">Remove {R.doctors.remove?'✓':'×'}</span><span className="chip chip-mini">Import {R.doctors.import?'✓':'×'}</span></div>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn" onClick={()=>goAdminControl('perm')}><i className="bi bi-sliders2"></i>Manage Permissions</button>
+      </div>
+    </div>
+  );
+}
+
+function UsersPanel({ showToast }) {
+  const [users, setUsers] = React.useState(() => { try { return JSON.parse(localStorage.getItem('users') || '[]'); } catch { return []; } });
+  const [changed, setChanged] = React.useState({});
+  const onRoleChange = (idx, role) => { setChanged(prev => ({ ...prev, [idx]: role })); };
+  const save = () => {
+    const next = users.map((u, i) => ({ ...u, role: changed[i] || u.role }));
+    setUsers(next);
+    try { localStorage.setItem('users', JSON.stringify(next)); } catch {}
+    showToast('Users updated');
+    logAudit('users.save', { changes: changed });
+  };
+  const remove = (idx) => {
+    const next = users.filter((_, i) => i !== idx);
+    setUsers(next);
+    try { localStorage.setItem('users', JSON.stringify(next)); } catch {}
+    showToast('User removed');
+    logAudit('users.remove', { index: idx });
+  };
+  const exportUsers = () => {
+    try {
+      const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `users-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Users exported');
+      logAudit('users.export', {});
+    } catch { showToast('Export failed', false); }
+  };
+  return (
+    <div>
+      <div className="list">
+        <table><thead><tr><th>Email</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead><tbody>
+          {users.map((u, i) => (
+            <tr key={u.email + ':' + i}><td>{u.email}</td><td>{u.username}</td><td>
+              <select value={(changed[i] || u.role)} onChange={e => onRoleChange(i, e.target.value)}>
+                <option value="admin">Admin</option>
+                <option value="head">Head of Department</option>
+                <option value="employee">Employee</option>
+              </select>
+            </td><td><button type="button" className="btn btn-deny" onClick={() => remove(i)}><i className="bi bi-trash"></i>Remove</button></td></tr>
+          ))}
+          {users.length === 0 && <tr><td colSpan={4} style={{ color: 'var(--muted)' }}>No users</td></tr>}
+        </tbody></table>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn-view" onClick={save}><i className="bi bi-save"></i>Save Changes</button>
+        <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={exportUsers}><i className="bi bi-file-earmark-arrow-down"></i>Export Users</button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({ showToast }) {
+  const [defaultView, setDefaultView] = React.useState(localStorage.getItem('site_default_view') || 'auto');
+  const apply = () => {
+    try { localStorage.setItem('site_default_view', defaultView); localStorage.setItem('view_mode', defaultView); } catch {}
+    if (typeof window.setViewMode === 'function') window.setViewMode(defaultView);
+    showToast('Settings saved');
+    logAudit('settings.apply', { defaultView });
+  };
+  return (
+    <div>
+      <div className="row"><label>Default View Mode</label>
+        <select value={defaultView} onChange={e => setDefaultView(e.target.value)}>
+          <option value="auto">Auto</option>
+          <option value="desktop">Desktop</option>
+          <option value="mobile">Mobile</option>
+        </select>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn-view" onClick={apply}><i className="bi bi-gear"></i>Apply</button>
+      </div>
+    </div>
+  );
+}
+
+function AccessPanel({ showToast }) {
+  const initialFont = (() => { const v = Number(localStorage.getItem('access_font_size') || '16'); return (v && v >= 12 && v <= 22) ? v : 16; })();
+  const initialDir = (localStorage.getItem('access_dir') || 'auto');
+  const [highContrast, setHighContrast] = React.useState(!!document.body.classList.contains('high-contrast'));
+  const [reduceMotion, setReduceMotion] = React.useState(!!document.body.classList.contains('reduced-motion'));
+  const [focusBold, setFocusBold] = React.useState(!!document.body.classList.contains('focus-bold'));
+  const [fontSize, setFontSize] = React.useState(initialFont);
+  const [direction, setDirection] = React.useState(initialDir);
+  const [twoFA, setTwoFA] = React.useState(!!Number(localStorage.getItem('security_2fa_enabled') || '0'));
+  const [sessionTimeout, setSessionTimeout] = React.useState(localStorage.getItem('security_session_timeout') || '30');
+  const [themeMode, setThemeMode] = React.useState(localStorage.getItem('theme_mode') || 'light');
+  const [glassMode, setGlassMode] = React.useState(!!document.body.classList.contains('theme-glass'));
+  const [edgeStyle, setEdgeStyle] = React.useState(document.body.classList.contains('edge-sharp') ? 'sharp' : 'rounded');
+  const apply = () => {
+    try {
+      localStorage.setItem('access_high_contrast', highContrast ? '1' : '0');
+      localStorage.setItem('access_reduce_motion', reduceMotion ? '1' : '0');
+      localStorage.setItem('access_focus_ring', focusBold ? '1' : '0');
+      localStorage.setItem('access_font_size', String(fontSize));
+      localStorage.setItem('access_dir', direction);
+      localStorage.setItem('security_2fa_enabled', twoFA ? '1' : '0');
+      localStorage.setItem('security_session_timeout', String(sessionTimeout));
+      localStorage.setItem('theme_mode', themeMode);
+      localStorage.setItem('access_glass', glassMode ? '1' : '0');
+      localStorage.setItem('edge_style', edgeStyle);
+    } catch {}
+    document.body.classList.toggle('high-contrast', highContrast);
+    document.body.classList.toggle('reduced-motion', reduceMotion);
+    document.body.classList.toggle('focus-bold', focusBold);
+    document.body.classList.remove('dir-rtl','dir-ltr');
+    if (direction === 'rtl') document.body.classList.add('dir-rtl');
+    if (direction === 'ltr') document.body.classList.add('dir-ltr');
+    document.documentElement.style.setProperty('--app-font-size', String(fontSize) + 'px');
+    const sysDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const useDark = themeMode === 'dark' || (themeMode === 'system' && sysDark);
+    document.body.classList.toggle('theme-dark', useDark);
+    document.body.classList.toggle('theme-glass', !!glassMode && useDark);
+    document.body.classList.toggle('edge-sharp', edgeStyle === 'sharp');
+    showToast('Access & Security settings applied');
+    logAudit('access.apply', { highContrast, reduceMotion, focusBold, fontSize, direction, twoFA, sessionTimeout, themeMode });
+  };
+  return (
+    <div>
+      <div className="row"><label>High Contrast</label>
+        <input type="checkbox" checked={highContrast} onChange={e => setHighContrast(e.target.checked)} />
+      </div>
+      <div className="row"><label>Reduced Motion</label>
+        <input type="checkbox" checked={reduceMotion} onChange={e => setReduceMotion(e.target.checked)} />
+      </div>
+      <div className="row"><label>Focus Ring</label>
+        <select value={focusBold ? 'bold' : 'normal'} onChange={e => setFocusBold(e.target.value === 'bold')}>
+          <option value="normal">Normal</option>
+          <option value="bold">Bold</option>
+        </select>
+      </div>
+      <div className="row"><label>Theme Mode</label>
+        <select value={themeMode} onChange={e => setThemeMode(e.target.value)}>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="system">System</option>
+        </select>
+      </div>
+      <div className="row"><label>Glass Mode (Dark)</label>
+        <input type="checkbox" checked={glassMode} onChange={e => setGlassMode(e.target.checked)} />
+      </div>
+      <div className="row"><label>Edge Style</label>
+        <select value={edgeStyle} onChange={e => setEdgeStyle(e.target.value)}>
+          <option value="rounded">Rounded</option>
+          <option value="sharp">Sharp</option>
+        </select>
+      </div>
+      <div className="row"><label>Font Size</label>
+        <input type="number" min={12} max={22} value={fontSize} onChange={e => setFontSize(Math.min(22, Math.max(12, Number(e.target.value) || 16)))} />
+      </div>
+      <div className="row"><label>Text Direction</label>
+        <select value={direction} onChange={e => setDirection(e.target.value)}>
+          <option value="auto">Auto</option>
+          <option value="ltr">Left-to-Right</option>
+          <option value="rtl">Right-to-Left</option>
+        </select>
+      </div>
+      <div className="row"><label>Two-Factor Auth (beta)</label>
+        <input type="checkbox" checked={twoFA} onChange={e => setTwoFA(e.target.checked)} />
+      </div>
+      <div className="row"><label>Session Timeout</label>
+        <select value={sessionTimeout} onChange={e => setSessionTimeout(e.target.value)}>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">60 minutes</option>
+          <option value="never">Never</option>
+        </select>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn-view" onClick={apply}><i className="bi bi-universal-access"></i>Apply</button>
+      </div>
+    </div>
+  );
+}
+
+function AdminControlPage({ hospitals, departments, doctors, specialties }) {
+  const authRole = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const userId = (localStorage.getItem('auth_user') || '').toLowerCase();
+  const authIsAdmin = authRole === 'admin' || userId === 'admin' || userId.startsWith('admin@');
+  const [toast, showToast] = useToast();
+  const [active, setActive] = React.useState('user');
+  React.useEffect(() => {
+    try {
+      const hint = (localStorage.getItem('admin_panel') || '').toLowerCase();
+      if (['user','access','perm','monitor'].includes(hint)) setActive(hint);
+      localStorage.removeItem('admin_panel');
+    } catch {}
+  }, []);
+  const icons = { user: 'bi-people', access: 'bi-shield-lock', perm: 'bi-sliders', monitor: 'bi-graph-up', diag: 'bi-activity' };
+  const TabButton = ({ id, label }) => (
+    <button className={'tab' + (active === id ? ' active' : '')} onClick={() => setActive(id)}>
+      <i className={'bi ' + (icons[id] || 'bi-ui-checks')}></i>{label}
+    </button>
+  );
+  if (!authIsAdmin) {
+    return (
+      <main className="data-layout">
+        <Section title="Admin Control">
+          <div className="alert error">Admins only</div>
+        </Section>
+      </main>
+    );
+  }
+  return (
+    <main className="data-layout">
+      <aside className="vtabs">
+        <div className="card" style={{ marginTop: 0 }}>
+          <div className="name">Admin Panels</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <TabButton id="user" label="User Management" />
+            <TabButton id="access" label="Access & Security" />
+            <TabButton id="perm" label="Permissions" />
+            <TabButton id="monitor" label="Monitoring" />
+            <TabButton id="diag" label="Diagnostics" />
+          </div>
+        </div>
+      </aside>
+      <section className="data-content">
+        <Section title="Admin Control">
+          {active === 'user' && (
+            <div className="card-grid">
+              <div className="card"><div className="name">Users & Roles</div><UsersPanel showToast={showToast} /></div>
+              <div className="card"><div className="name">Invite User</div><InviteUserPanel showToast={showToast} /></div>
+            </div>
+          )}
+          {active === 'access' && (
+            <div className="card-grid">
+              <div className="card"><div className="name">Site Settings</div><SettingsPanel showToast={showToast} /></div>
+              <div className="card"><div className="name">Accessibility & Security</div><AccessPanel showToast={showToast} /></div>
+              <div className="card"><div className="name">Policies</div><PoliciesPanel showToast={showToast} /></div>
+            </div>
+          )}
+          {active === 'perm' && (
+            <div className="card-grid">
+              <div className="card"><div className="name">Permissions Matrix</div><PermissionsPanel showToast={showToast} /></div>
+              <div className="card"><div className="name">App Overview</div><AppOverviewPanel /></div>
+            </div>
+          )}
+          {active === 'monitor' && (
+            <div className="card-grid">
+              <div className="card"><div className="name">Analytics</div><AnalyticsPanel hospitals={hospitals} departments={departments} doctors={doctors} specialties={specialties} duties={store.read('duties', [])} vacations={store.read('vacations', [])} /></div>
+              <div className="card"><div className="name">Audit Logs</div><AuditLogsPanel showToast={showToast} /></div>
+            </div>
+          )}
+          {active === 'diag' && (
+            <div className="card-grid">
+              <div className="card">
+                <div className="name">Diagnostics</div>
+                <DiagnosticsPage hospitals={hospitals} departments={departments} doctors={doctors} specialties={specialties} vacations={store.read('vacations', [])} duties={store.read('duties', [])} shifts={store.read('shifts', [])} />
+              </div>
+            </div>
+          )}
+        </Section>
+        <footer>{toast && <Toast message={toast.msg} ok={toast.ok} />}</footer>
+      </section>
+    </main>
+  );
+}
+
+function AnalyticsPanel({ hospitals, departments, doctors, specialties, duties, vacations }) {
+  const usersCount = (() => { try { return JSON.parse(localStorage.getItem('users') || '[]').length; } catch { return 0; } })();
+  const vacList = Array.isArray(vacations) ? vacations : [];
+  const approvedVacations = vacList.filter(v => v.status === 'approved').length;
+  const requestedVacations = vacList.filter(v => v.status === 'requested').length;
+  const deniedVacations = vacList.filter(v => v.status === 'denied').length;
+  const dutiesCount = Array.isArray(duties) ? duties.length : 0;
+  return (
+    <div className="kpi-grid">
+      <div className="kpi card"><div className="value">{usersCount}</div><div className="label">Users</div></div>
+      <div className="kpi card"><div className="value">{hospitals.length}</div><div className="label">Hospitals</div></div>
+      <div className="kpi card"><div className="value">{departments.length}</div><div className="label">Departments</div></div>
+      <div className="kpi card"><div className="value">{specialties.length}</div><div className="label">Specialties</div></div>
+      <div className="kpi card"><div className="value">{doctors.length}</div><div className="label">Doctors</div></div>
+      <div className="kpi card"><div className="value">{dutiesCount}</div><div className="label">Duties</div></div>
+      <div className="kpi card"><div className="value">{requestedVacations}</div><div className="label">Requested Vacations</div></div>
+      <div className="kpi card"><div className="value">{approvedVacations}</div><div className="label">Approved Vacations</div></div>
+      <div className="kpi card"><div className="value">{deniedVacations}</div><div className="label">Denied Vacations</div></div>
+    </div>
+  );
+}
+
+function AuditLogsPanel({ showToast }) {
+  const [logs, setLogs] = React.useState(() => { try { return JSON.parse(localStorage.getItem('audit_logs') || '[]'); } catch { return []; } });
+  const [filter, setFilter] = React.useState('');
+  const exportCsv = () => {
+    try {
+      const headers = ['time','actor','action','payload'];
+      const rows = logs.filter(l => !filter || String(l.action).includes(filter)).map(l => [l.time, l.actor||'', l.action||'', JSON.stringify(l.payload||{})]);
+      const csv = [headers.join(','), ...rows.map(r => r.map(x => '"'+String(x).replace(/"/g,'""')+'"').join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'audit_logs.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      showToast('Audit exported');
+    } catch { showToast('Export failed', false); }
+  };
+  return (
+    <div>
+      <div className="row"><label>Filter Action</label><input value={filter} onChange={e => setFilter(e.target.value)} placeholder="e.g., permissions.save" /></div>
+      <div className="list" style={{ marginTop: 8 }}>
+        <table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Payload</th></tr></thead><tbody>
+          {logs.filter(l => !filter || String(l.action).includes(filter)).map((l,i) => (
+            <tr key={l.time+':'+i}><td>{l.time}</td><td>{l.actor||''}</td><td>{l.action||''}</td><td><code>{JSON.stringify(l.payload||{})}</code></td></tr>
+          ))}
+          {(!logs.length || !logs.filter(l => !filter || String(l.action).includes(filter)).length) && <tr><td colSpan={4} style={{ color: 'var(--muted)' }}>No logs</td></tr>}
+        </tbody></table>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn" onClick={exportCsv}><i className="bi bi-file-earmark-spreadsheet"></i>Export CSV</button>
+      </div>
+    </div>
+  );
+}
+
+function InviteUserPanel({ showToast }) {
+  const [email, setEmail] = React.useState('');
+  const [username, setUsername] = React.useState('');
+  const [role, setRole] = React.useState('employee');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const toHash = async (text) => {
+    try {
+      const enc = new TextEncoder().encode(text);
+      const buf = await (crypto.subtle ? crypto.subtle.digest('SHA-256', enc) : Promise.resolve(null));
+      if (!buf) return text;
+      const arr = Array.from(new Uint8Array(buf));
+      return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch { return text; }
+  };
+  const submit = async (e) => {
+    e.preventDefault();
+    const em = String(email || '').trim().toLowerCase();
+    const un = String(username || '').trim().toLowerCase();
+    const pw = String(password || '').trim();
+    if (!em || !/^[^@]+@moh\.gov\.sa$/i.test(em)) { setError('Enter MOH email'); return; }
+    if (!un || un.length < 3) { setError('Username ≥ 3 chars'); return; }
+    if (!pw || pw.length < 6) { setError('Password ≥ 6 chars'); return; }
+    if (!['admin','head','employee'].includes(role)) { setError('Invalid role'); return; }
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      if (users.some(u => u.email === em || u.username === un)) { setError('User already exists'); return; }
+      const hash = await toHash(pw);
+      users.push({ email: em, username: un, role, password: hash });
+      localStorage.setItem('users', JSON.stringify(users));
+      setEmail(''); setUsername(''); setPassword(''); setError('');
+      showToast('User invited');
+      logAudit('users.invite', { email: em, role });
+    } catch { setError('Failed to invite'); }
+  };
+  return (
+    <form onSubmit={submit} noValidate>
+      {error && React.createElement('div', { className: 'alert error' }, error)}
+      <div className="row"><label>MOH Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@moh.gov.sa" /></div>
+      <div className="row"><label>Username</label><input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" /></div>
+      <div className="row"><label>Role</label><select value={role} onChange={e => setRole(e.target.value)}>
+        <option value="admin">Admin</option>
+        <option value="head">Head of Department</option>
+        <option value="employee">Employee</option>
+      </select></div>
+      <div className="row"><label>Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
+      <div style={{ marginTop: 8 }}>
+        <button type="submit" className="btn-view"><i className="bi bi-person-plus"></i>Add User</button>
+      </div>
+    </form>
+  );
+}
+
+function PoliciesPanel({ showToast }) {
+  const [enforceMohEmail, setEnforceMohEmail] = React.useState(true);
+  const [minPasswordLen, setMinPasswordLen] = React.useState(6);
+  const apply = () => {
+    try {
+      localStorage.setItem('policy_enforce_moh_email', enforceMohEmail ? '1' : '0');
+      localStorage.setItem('policy_min_password_len', String(minPasswordLen));
+    } catch {}
+    showToast('Policies saved');
+  };
+  return (
+    <div>
+      <div className="row"><label>Require @moh.gov.sa Email</label>
+        <input type="checkbox" checked={enforceMohEmail} onChange={e => setEnforceMohEmail(e.target.checked)} />
+      </div>
+      <div className="row"><label>Min Password Length</label>
+        <input type="number" min={6} value={minPasswordLen} onChange={e => setMinPasswordLen(Number(e.target.value) || 6)} />
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn-view" onClick={apply}><i className="bi bi-shield-lock"></i>Apply</button>
+      </div>
+    </div>
+  );
+}
+
+function PermissionsPanel({ showToast }) {
+  const [matrix, setMatrix] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('permissions_matrix') || 'null'); } catch { return null; }
+  });
+  const defaults = {
+    admin: { importData: true, exportBackup: true, resetData: true, hospitals: { add: true, edit: true, remove: true }, specialties: { add: true, edit: true, remove: true }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: true } },
+    head:  { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: false } },
+    employee: { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: false, edit: false, remove: false }, doctors: { add: false, edit: false, remove: false, import: false } }
+  };
+  const perms = matrix || defaults;
+  const [role, setRole] = React.useState('head');
+  const update = (path, value) => {
+    const next = JSON.parse(JSON.stringify(perms));
+    let ref = next[role];
+    const keys = path.split('.');
+    for (let i = 0; i < keys.length - 1; i++) ref = ref[keys[i]];
+    ref[keys[keys.length - 1]] = value;
+    setMatrix(next);
+  };
+  const save = () => {
+    try { localStorage.setItem('permissions_matrix', JSON.stringify(perms)); showToast('Permissions updated'); logAudit('permissions.save', { role, perms: perms[role] }); } catch { showToast('Save failed', false); }
+  };
+  const reset = () => { setMatrix(null); try { localStorage.removeItem('permissions_matrix'); } catch {}; showToast('Permissions reset'); logAudit('permissions.reset', {}); };
+  const R = perms[role];
+  return (
+    <div>
+      <div className="row"><label>Role</label>
+        <select value={role} onChange={e => setRole(e.target.value)}>
+          <option value="admin">Admin</option>
+          <option value="head">Head of Department</option>
+          <option value="employee">Employee</option>
+        </select>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Header Controls</div>
+        <div className="row"><label>Import Data</label><input type="checkbox" checked={!!R.importData} onChange={e => update('importData', e.target.checked)} /></div>
+        <div className="row"><label>Export Backup</label><input type="checkbox" checked={!!R.exportBackup} onChange={e => update('exportBackup', e.target.checked)} /></div>
+        <div className="row"><label>Reset Data</label><input type="checkbox" checked={!!R.resetData} onChange={e => update('resetData', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Hospitals</div>
+        <div className="row"><label>Add</label><input type="checkbox" checked={!!R.hospitals.add} onChange={e => update('hospitals.add', e.target.checked)} /></div>
+        <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.hospitals.edit} onChange={e => update('hospitals.edit', e.target.checked)} /></div>
+        <div className="row"><label>Remove</label><input type="checkbox" checked={!!R.hospitals.remove} onChange={e => update('hospitals.remove', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Specialties</div>
+        <div className="row"><label>Add</label><input type="checkbox" checked={!!R.specialties.add} onChange={e => update('specialties.add', e.target.checked)} /></div>
+        <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.specialties.edit} onChange={e => update('specialties.edit', e.target.checked)} /></div>
+        <div className="row"><label>Remove</label><input type="checkbox" checked={!!R.specialties.remove} onChange={e => update('specialties.remove', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Departments</div>
+        <div className="row"><label>Add</label><input type="checkbox" checked={!!R.departments.add} onChange={e => update('departments.add', e.target.checked)} /></div>
+        <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.departments.edit} onChange={e => update('departments.edit', e.target.checked)} /></div>
+        <div className="row"><label>Remove</label><input type="checkbox" checked={!!R.departments.remove} onChange={e => update('departments.remove', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Doctors</div>
+        <div className="row"><label>Add</label><input type="checkbox" checked={!!R.doctors.add} onChange={e => update('doctors.add', e.target.checked)} /></div>
+        <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.doctors.edit} onChange={e => update('doctors.edit', e.target.checked)} /></div>
+        <div className="row"><label>Remove</label><input type="checkbox" checked={!!R.doctors.remove} onChange={e => update('doctors.remove', e.target.checked)} /></div>
+        <div className="row"><label>Import</label><input type="checkbox" checked={!!R.doctors.import} onChange={e => update('doctors.import', e.target.checked)} /></div>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button type="button" className="btn-view" onClick={save}><i className="bi bi-save"></i>Save Permissions</button>
+        <button type="button" className="btn" style={{ marginLeft: 8 }} onClick={reset}><i className="bi bi-arrow-counterclockwise"></i>Reset to Default</button>
+      </div>
+    </div>
   );
 }
 
@@ -1975,7 +2545,7 @@ function HospitalPage({ hospitalId, hospitals, departments, doctors, setDoctors,
   );
 }
 
-function HospitalCard({ hospital, editId, editName, onEditStart, onEditName, onEditSave, onEditCancel, hospitals, setHospitals, doctors, setDoctors, onSelect, selected }) {
+function HospitalCard({ hospital, editId, editName, onEditStart, onEditName, onEditSave, onEditCancel, hospitals, setHospitals, doctors, setDoctors, onSelect, selected, canEdit = true, canRemove = true }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const removeHospital = () => {
     if (!window.confirm('Remove this hospital?')) return;
@@ -2001,20 +2571,20 @@ function HospitalCard({ hospital, editId, editName, onEditStart, onEditName, onE
       ) : (
         <>
           <div className="name">{hospital.name}</div>
-          <button className="kebab-btn" type="button" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }} aria-label="Options">⋮</button>
+          {(canEdit || canRemove) && <button className="kebab-btn" type="button" onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }} aria-label="Options">⋮</button>}
         </>
       )}
-      {menuOpen && editId !== hospital.id && (
+      {menuOpen && editId !== hospital.id && (canEdit || canRemove) && (
         <div className="kebab-menu">
-            <button className="kebab-item" type="button" onClick={(e) => { e.stopPropagation(); onEditStart(); setMenuOpen(false); }}><i className="bi bi-pencil"></i>Edit</button>
-          <button className="kebab-item" type="button" onClick={(e) => { e.stopPropagation(); removeHospital(); }}>Remove</button>
+            {canEdit && <button className="kebab-item" type="button" onClick={(e) => { e.stopPropagation(); onEditStart(); setMenuOpen(false); }}><i className="bi bi-pencil"></i>Edit</button>}
+          {canRemove && <button className="kebab-item" type="button" onClick={(e) => { e.stopPropagation(); removeHospital(); }}>Remove</button>}
         </div>
       )}
     </div>
   );
 }
 
-function DoctorCard({ doctor, doctors, setDoctors, specialties, hospitals }) {
+function DoctorCard({ doctor, doctors, setDoctors, specialties, hospitals, canEditDoctor = true, canRemoveDoctor = true }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
   const [name, setName] = React.useState(doctor.name || '');
@@ -2080,11 +2650,11 @@ function DoctorCard({ doctor, doctors, setDoctors, specialties, hospitals }) {
         <div className="name">{doctor.name}</div>
         <div className="meta">{doctor.specialty || '-'} · {doctor.grade || '-'} · {doctor.hospital || '-'}</div>
       </div>
-      <button className="kebab-btn" type="button" onClick={() => setMenuOpen(v => !v)} aria-label="Options">⋮</button>
+      {(canEditDoctor || canRemoveDoctor) && <button className="kebab-btn" type="button" onClick={() => setMenuOpen(v => !v)} aria-label="Options">⋮</button>}
       {menuOpen && (
         <div className="kebab-menu">
-          <button className="kebab-item" type="button" onClick={() => { setEditing(true); setMenuOpen(false); }}>Edit</button>
-          <button className="kebab-item" type="button" onClick={removeDoctor}>Remove</button>
+          {canEditDoctor && <button className="kebab-item" type="button" onClick={() => { setEditing(true); setMenuOpen(false); }}>Edit</button>}
+          {canRemoveDoctor && <button className="kebab-item" type="button" onClick={removeDoctor}>Remove</button>}
         </div>
       )}
 
@@ -2119,6 +2689,10 @@ function DoctorCard({ doctor, doctors, setDoctors, specialties, hospitals }) {
 
 function OnCall({ hospitals, departments, duties, doctors, shifts, setDuties, vacations }) {
   const [filters, setFilters] = useGlobalFilters();
+  const authRoleOC = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const previewOC = (localStorage.getItem('role_preview') || '').toLowerCase();
+  const effRoleOC = authRoleOC === 'admin' && previewOC ? previewOC : authRoleOC;
+  const opsPermsOC = getOpsPermissions(effRoleOC);
   const hospitalId = filters.hospitalId || '';
   const setHospitalId = (v) => setFilters(prev => ({ ...prev, hospitalId: v }));
   const deptName = filters.department || '';
@@ -2188,6 +2762,7 @@ function OnCall({ hospitals, departments, duties, doctors, shifts, setDuties, va
   const openDay = (iso) => { setSelectedDate(iso); };
 
   const addDoctor = (doctorId) => {
+    if (!opsPermsOC.assignAdd) { showToast('Not permitted', false); return; }
     if (!selectedDate || !doctorId) return;
     const idNum = Number(doctorId);
     const onLeave = Array.isArray(vacations)
@@ -2200,6 +2775,7 @@ function OnCall({ hospitals, departments, duties, doctors, shifts, setDuties, va
     });
   };
   const removeDoctor = (doctorId) => {
+    if (!opsPermsOC.assignRemove) { showToast('Not permitted', false); return; }
     if (!selectedDate) return;
     if (!window.confirm('Remove this assignment?')) return;
     const idNum = Number(doctorId);
@@ -2207,6 +2783,7 @@ function OnCall({ hospitals, departments, duties, doctors, shifts, setDuties, va
   };
 
   const saveAssignments = () => {
+    if (!opsPermsOC.save) { showToast('Not permitted', false); return; }
     if (!selectedDate) return;
     const dept = String(deptName || '').trim();
     if (!hospitalId) return showToast('Select hospital first', false);
@@ -2521,6 +3098,18 @@ function DiagnosticsPage({ hospitals, departments, doctors, specialties, vacatio
           <div className="kpi card"><div className="value">{smoke.dataHospitals}</div><div className="label">Hospitals</div></div>
           <div className="kpi card"><div className="value">{smoke.dataSpecialties}</div><div className="label">Specialties</div></div>
           <div className="kpi card"><div className="value">{a11yCount != null ? a11yCount : (a11y.error ? 'Error' : '…')}</div><div className="label">A11y Violations</div></div>
+        </div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Admin Control Status</div>
+        <div className="kpi-grid" style={{ marginTop: 8 }}>
+          <div className="kpi card"><div className="value">{(localStorage.getItem('auth_role')||'').toLowerCase()==='admin' || (localStorage.getItem('auth_user')||'').toLowerCase()==='admin' || (localStorage.getItem('auth_user')||'').toLowerCase().startsWith('admin@') ? 'Admin' : 'User'}</div><div className="label">Role</div></div>
+          <div className="kpi card"><div className="value">{document.querySelector('a.nav-link[href="#/admin-control"]') ? 'OK' : 'Missing'}</div><div className="label">Menu Link</div></div>
+          <div className="kpi card"><div className="value">{window.location.hash==="#/admin-control" ? 'Open' : 'Closed'}</div><div className="label">Route</div></div>
+          <div className="kpi card"><div className="value">{document.body.classList.contains('high-contrast') ? 'On' : 'Off'}</div><div className="label">High Contrast</div></div>
+          <div className="kpi card"><div className="value">{document.body.classList.contains('reduced-motion') ? 'On' : 'Off'}</div><div className="label">Reduced Motion</div></div>
+          <div className="kpi card"><div className="value">{document.body.classList.contains('focus-bold') ? 'Bold' : 'Normal'}</div><div className="label">Focus Ring</div></div>
+          <div className="kpi card"><div className="value">{(localStorage.getItem('security_session_timeout')||'30')}</div><div className="label">Session Timeout</div></div>
         </div>
       </div>
       {Array.isArray(a11y.violations) && a11y.violations.length > 0 && (
@@ -3655,12 +4244,15 @@ function HomeCard({ title, desc, href }) {
 function HomePage() {
   const [mode, setMode] = React.useState(localStorage.getItem('view_mode') || 'auto');
   React.useEffect(() => { try { localStorage.setItem('view_mode', mode); } catch {} if (typeof window.setViewMode === 'function') window.setViewMode(mode); }, [mode]);
+  const authRole = (localStorage.getItem('auth_role') || '').toLowerCase();
+  const userId = (localStorage.getItem('auth_user') || '').toLowerCase();
+  const isAdmin = authRole === 'admin' || userId === 'admin' || userId.startsWith('admin@');
   return (
     <main className="home-grid">
       <HomeCard title="Data Entry" desc="Hospitals, specialties, shifts, doctors" href="#/data-entry" />
       <HomeCard title="Schedules & Vacations" desc="Manage leave and generate rosters" href="#/operations" />
       <HomeCard title="Dashboard" desc="Visualize staffing, leave, and load" href="#/dashboard" />
-      <HomeCard title="Diagnostics" desc="Performance & Accessibility" href="#/diagnostics" />
+      {isAdmin && <HomeCard title="Admin Control" desc="Users, permissions, policies" href="#/admin-control" />}
     </main>
   );
 }
@@ -3669,6 +4261,7 @@ function App() {
   ensureSeeds();
   const [route, setRoute] = React.useState('#/operations');
   const [viewMode, setViewMode] = React.useState(localStorage.getItem('view_mode') || 'auto');
+  const [authed, setAuthed] = React.useState(!!localStorage.getItem('auth_token'));
   const [hospitals, setHospitals] = React.useState(store.read('hospitals', []));
   const [specialties, setSpecialties] = React.useState(store.read('specialties', []));
   const [departments, setDepartments] = React.useState(store.read('departments', []));
@@ -3693,6 +4286,86 @@ function App() {
     window.addEventListener('storage', onStorage);
     return () => { window.removeEventListener('storage', onStorage); delete window.setViewMode; };
   }, [viewMode]);
+  React.useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'auth_token') setAuthed(!!(e.newValue));
+      if (e.key === 'auth_user') {/* no-op */}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  React.useEffect(() => {
+    const applyAccess = () => {
+      const hc = !!Number(localStorage.getItem('access_high_contrast') || '0');
+      const rm = !!Number(localStorage.getItem('access_reduce_motion') || '0');
+      const fb = !!Number(localStorage.getItem('access_focus_ring') || '0');
+      const dir = (localStorage.getItem('access_dir') || 'auto');
+      const fs = Number(localStorage.getItem('access_font_size') || '16');
+      const theme = (localStorage.getItem('theme_mode') || 'light');
+      const glass = !!Number(localStorage.getItem('access_glass') || '0');
+      const edge = (localStorage.getItem('edge_style') || 'rounded');
+      document.body.classList.toggle('high-contrast', hc);
+      document.body.classList.toggle('reduced-motion', rm);
+      document.body.classList.toggle('focus-bold', fb);
+      document.body.classList.remove('dir-rtl','dir-ltr');
+      if (dir === 'rtl') document.body.classList.add('dir-rtl');
+      if (dir === 'ltr') document.body.classList.add('dir-ltr');
+      document.documentElement.style.setProperty('--app-font-size', String((fs && fs >= 12 && fs <= 22) ? fs : 16) + 'px');
+      const sysDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const useDark = theme === 'dark' || (theme === 'system' && sysDark);
+      document.body.classList.toggle('theme-dark', useDark);
+      document.body.classList.toggle('theme-glass', glass && useDark);
+      document.body.classList.toggle('edge-sharp', edge === 'sharp');
+    };
+    applyAccess();
+    const onStorage = (e) => { if (e.key && (e.key.startsWith('access_') || e.key === 'theme_mode' || e.key === 'edge_style')) applyAccess(); };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  React.useEffect(() => {
+    let tid;
+    const readTimeoutMin = () => {
+      const v = localStorage.getItem('security_session_timeout') || '30';
+      if (v === 'never') return 0;
+      const n = Number(v) || 0; return n;
+    };
+    const reset = () => {
+      if (tid) { clearTimeout(tid); tid = undefined; }
+      if (!authed) return;
+      const mins = readTimeoutMin();
+      if (!mins) return;
+      tid = setTimeout(() => { if (typeof window.logout === 'function') window.logout(); }, mins * 60 * 1000);
+    };
+    const onActivity = () => reset();
+    window.addEventListener('mousemove', onActivity);
+    window.addEventListener('keydown', onActivity);
+    window.addEventListener('click', onActivity);
+    reset();
+    const onStorage = (e) => { if (e.key === 'security_session_timeout') reset(); };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      if (tid) clearTimeout(tid);
+      window.removeEventListener('mousemove', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('click', onActivity);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [authed]);
+  React.useEffect(() => {
+    if (!authed && route !== '#/login' && route !== '#/signup') setRoute('#/login');
+  }, [authed, route]);
+  window.logout = () => {
+    try {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_role');
+    } catch {}
+    if (typeof window.renderUserPanel === 'function') window.renderUserPanel();
+    setAuthed(false);
+    setRoute('#/login');
+    try { window.location.hash = '#/login'; } catch {}
+  };
+  window.setAuth = (flag) => { setAuthed(!!flag); };
   React.useEffect(() => {
     (async () => {
       if ((Array.isArray(hospitals) ? hospitals.length : 0) === 0) {
@@ -3757,8 +4430,11 @@ function App() {
   
   return (
       <Router route={route} setRoute={setRoute}>
+        {route === '#/login' && <LoginPage setRoute={setRoute} />}
+        {route === '#/signup' && <SignupPage setRoute={setRoute} />}
         {route === '#/' && <HomePage />}
         {(route === '#/admin' || route === '#/data-entry') && <AdminPage hospitals={hospitals} setHospitals={setHospitals} specialties={specialties} setSpecialties={setSpecialties} departments={departments} setDepartments={setDepartments} shifts={shifts} setShifts={setShifts} doctors={doctors} setDoctors={setDoctors} />}
+        {route === '#/admin-control' && <AdminControlPage hospitals={hospitals} departments={departments} doctors={doctors} specialties={specialties} />}
         {/^#\/assign\/(\d+)$/.test(route) && (
           <DepartmentAssignPage
             departmentId={Number((route.match(/^#\/assign\/(\d+)$/) || [])[1])}
@@ -3781,8 +4457,123 @@ function App() {
         )}
         {route === '#/operations' && <OperationsPage hospitals={hospitals} departments={departments} doctors={doctors} shifts={shifts} vacations={vacations} setVacations={setVacations} vacationPlans={vacationPlans} setVacationPlans={setVacationPlans} duties={duties} setDuties={setDuties} />}
         {/^#\/dashboard(\/.*)?$/.test(route) && <DashboardPage hospitals={hospitals} departments={departments} doctors={doctors} specialties={specialties} vacations={vacations} duties={duties} shifts={shifts} />}
-        {route === '#/diagnostics' && <DiagnosticsPage hospitals={hospitals} departments={departments} doctors={doctors} specialties={specialties} vacations={vacations} duties={duties} shifts={shifts} />}
       </Router>
+  );
+}
+
+function LoginPage({ setRoute }) {
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState('');
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const userInput = String(email || '').trim();
+    const userLower = userInput.toLowerCase();
+    const pass = String(password || '').trim();
+    if (!userLower || !pass) { setError('Username or email and password required'); return; }
+    const isEmail = userLower.includes('@');
+    const isAdmin = ((userLower === 'admin') || (isEmail && userLower.startsWith('admin@'))) && pass === '123456';
+    if (!isAdmin) { setError('Invalid credentials'); return; }
+    try {
+      const token = Math.random().toString(36).slice(2);
+      localStorage.setItem('auth_user', userInput);
+      localStorage.setItem('auth_role', 'admin');
+      localStorage.setItem('auth_token', token);
+      if (typeof window.setAuth === 'function') window.setAuth(true);
+      if (typeof window.renderUserPanel === 'function') window.renderUserPanel();
+      setRoute('#/');
+      try { window.location.hash = '#/'; } catch {}
+    } catch {
+      setError('Failed to save session');
+    }
+  };
+  return (
+    <div className="centered">
+      <div className="card" style={{ maxWidth: 420, width: '95%', marginTop: 24 }}>
+        <h3 style={{ marginTop: 0 }}>Login</h3>
+        {error && React.createElement('div', { className: 'alert error' }, error)}
+        <form onSubmit={onSubmit} noValidate>
+          <div className="row"><label>Username or Email</label><input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin or admin@example.com" /></div>
+          <div className="row"><label>Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button type="submit" className="btn-view"><i className="bi bi-box-arrow-in-right"></i>Login</button>
+            <button type="button" className="btn" onClick={() => { setEmail(''); setPassword(''); setError(''); }}><i className="bi bi-x-circle"></i>Clear</button>
+          </div>
+        </form>
+        <div style={{ marginTop: 12 }}>
+          <button type="button" className="btn" onClick={() => setRoute('#/signup')}><i className="bi bi-person-plus"></i>Sign Up</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignupPage({ setRoute }) {
+  const [email, setEmail] = React.useState('');
+  const [username, setUsername] = React.useState('');
+  const [role, setRole] = React.useState('employee');
+  const [password, setPassword] = React.useState('');
+  const [confirm, setConfirm] = React.useState('');
+  const [error, setError] = React.useState('');
+  const toHash = async (text) => {
+    try {
+      const enc = new TextEncoder().encode(text);
+      const buf = await (crypto.subtle ? crypto.subtle.digest('SHA-256', enc) : Promise.resolve(null));
+      if (!buf) return text;
+      const arr = Array.from(new Uint8Array(buf));
+      return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch { return text; }
+  };
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const em = String(email || '').trim().toLowerCase();
+    const un = String(username || '').trim().toLowerCase();
+    const pw = String(password || '').trim();
+    const cf = String(confirm || '').trim();
+    if (!em || !/^[^@]+@moh\.gov\.sa$/i.test(em)) { setError('Enter valid MOH email (@moh.gov.sa)'); return; }
+    if (!un || un.length < 3) { setError('Username must be at least 3 characters'); return; }
+    if (!pw || pw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (pw !== cf) { setError('Passwords do not match'); return; }
+    if (!['admin','head','employee'].includes(role)) { setError('Invalid role'); return; }
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      if (users.some(u => u.email === em || u.username === un)) { setError('User already exists'); return; }
+      const hash = await toHash(pw);
+      users.push({ email: em, username: un, role, password: hash });
+      localStorage.setItem('users', JSON.stringify(users));
+      const token = Math.random().toString(36).slice(2);
+      localStorage.setItem('auth_user', un);
+      localStorage.setItem('auth_role', role);
+      localStorage.setItem('auth_token', token);
+      if (typeof window.setAuth === 'function') window.setAuth(true);
+      if (typeof window.renderUserPanel === 'function') window.renderUserPanel();
+      setRoute('#/');
+      try { window.location.hash = '#/'; } catch {}
+    } catch { setError('Failed to create account'); }
+  };
+  return (
+    <div className="centered">
+      <div className="card" style={{ maxWidth: 520, width: '95%', marginTop: 24 }}>
+        <h3 style={{ marginTop: 0 }}>Sign Up</h3>
+        {error && React.createElement('div', { className: 'alert error' }, error)}
+        <form onSubmit={onSubmit} noValidate>
+          <div className="row"><label>MOH Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@moh.gov.sa" /></div>
+          <div className="row"><label>Username</label><input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" /></div>
+          <div className="row"><label>User Type</label><select value={role} onChange={e => setRole(e.target.value)}>
+            <option value="admin">Admin</option>
+            <option value="head">Head of Department</option>
+            <option value="employee">Employee</option>
+          </select></div>
+          <div className="row"><label>Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" /></div>
+          <div className="row"><label>Confirm Password</label><input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="••••••••" /></div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button type="submit" className="btn-view"><i className="bi bi-person-plus"></i>Create Account</button>
+            <button type="button" className="btn" onClick={() => { setEmail(''); setUsername(''); setPassword(''); setConfirm(''); setError(''); }}><i className="bi bi-x-circle"></i>Clear</button>
+            <button type="button" className="btn" onClick={() => setRoute('#/login')}><i className="bi bi-box-arrow-in-left"></i>Back to Login</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
