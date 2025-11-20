@@ -3419,12 +3419,15 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
     const deptName = opsDepartmentName || 'All';
     const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
     const css = `@page{size:A4;margin:2mm 6mm 6mm 6mm}
-    .card{padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
+    *{box-shadow:none}
+    .card{padding:6px;border:1px solid #bbb;border-radius:8px;background:#fff}
     .year-bar{position:relative;width:100%;height:14px;border:1px solid #cbd5e1;background:#ffffff}
     .year-bar .month-band{position:absolute;top:0;bottom:0;background:rgba(0,0,0,0.06)}
     .year-bar .tick{position:absolute;top:-3px;bottom:-3px;width:1px;background:#cbd5e1}
     .year-bar .month-label{position:absolute;top:100%;transform:translateX(-50%);font-size:9px;color:#475569}
     .year-bar .highlight{position:absolute;top:2px;bottom:2px;border-radius:2px}
+    .card::before,.card::after,.chip::before,.tab-chip::before,.vtabs .tab::before,.nav-link::before,.day-cell::before{display:none}
+    body.bg-watermark::before{opacity:.14;background-size:460px auto;filter:none}
     .sign-row{display:flex;gap:12px;margin-top:32px}
     .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:17px;font-weight:700;color:#334155;text-align:center}`;
     const header = `<div class="print-header">
@@ -3435,8 +3438,12 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
       </div>
     </div>`;
     const signatures = `<div class="sign-row"><div class="sign">Head of Department</div><div class="sign">Medical Director</div><div class="sign">Hospital Director</div></div>`;
-    const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Vacation Plans</title><base href="${baseUrl}"><link rel="stylesheet" href="${baseUrl}styles.css" /><style>${css}</style></head><body class="printing-only"><main class="printable"><section class="card print-only report-content">${header}${tableHtml}${signatures}</section></main></body></html>`;
-    const w = window.open('', '_blank'); if (!w) return; w.document.open(); w.document.write(docHtml); w.document.close(); w.focus(); setTimeout(() => { w.print(); w.close(); }, 500);
+    const toolbar = `<div style="position:sticky;top:0;display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:8px;border-bottom:1px solid #e2e8f0;background:#fff;z-index:10">
+      <button type="button" onclick="window.print()" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;cursor:pointer;font-weight:600"><span style="margin-right:6px">🖨️</span>Print</button>
+      <button type="button" onclick="window.close()" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#f1f5f9;cursor:pointer;font-weight:600"><span style="margin-right:6px">✖</span>Close</button>
+    </div>`;
+    const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Vacation Plans</title><base href="${baseUrl}"><link rel="stylesheet" href="${baseUrl}styles.css" /><style>${css}</style></head><body class="bg-watermark printing-only">${toolbar}<main class="printable"><section class="card print-only report-content">${header}${tableHtml}${signatures}</section></main></body></html>`;
+    const w = window.open('', '_blank'); if (!w) return; w.document.open(); w.document.write(docHtml); w.document.close(); w.focus();
   };
   const printVacationPlansPage = () => {
     const ys = new Date(year,0,1), ye = new Date(year,11,31);
@@ -3481,16 +3488,19 @@ function VacationPlans({ hospitals, departments, doctors, vacationPlans, setVaca
       </div>
     </div>`;
     const css = `@page{size:A4;margin:2mm 6mm 6mm 6mm}
-    .card{padding:6px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
+    *{box-shadow:none}
+    .card{padding:6px;border:1px solid #bbb;border-radius:8px;background:#fff}
     .year-bar{position:relative;width:100%;height:14px;border:1px solid #cbd5e1;background:#ffffff}
     .year-bar .month-band{position:absolute;top:0;bottom:0;background:rgba(0,0,0,0.06)}
     .year-bar .tick{position:absolute;top:-3px;bottom:-3px;width:1px;background:#cbd5e1}
     .year-bar .month-label{position:absolute;top:100%;transform:translateX(-50%);font-size:9px;color:#475569}
     .year-bar .highlight{position:absolute;top:2px;bottom:2px;border-radius:2px}
+    .card::before,.card::after,.chip::before,.tab-chip::before,.vtabs .tab::before,.nav-link::before,.day-cell::before{display:none}
+    body.bg-watermark::before{opacity:.14;background-size:460px auto;filter:none}
     .sign-row{display:flex;gap:12px;margin-top:32px}
     .sign{flex:1;border-top:1px solid #94a3b8;padding-top:12px;font-size:17px;font-weight:700;color:#334155;text-align:center}`;
     const signatures = `<div class="sign-row"><div class="sign">Head of Department</div><div class="sign">Medical Director</div><div class="sign">Hospital Director</div></div>`;
-    const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title><base href="${baseUrl}"><link rel="stylesheet" href="${baseUrl}styles.css" /><style>${css}</style></head><body class="printing-only"><main class="printable"><section class="card print-only report-content">${header}${tableHtml}${signatures}</section></main></body></html>`;
+    const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title><base href="${baseUrl}"><link rel="stylesheet" href="${baseUrl}styles.css" /><style>${css}</style></head><body class="bg-watermark printing-only"><main class="printable"><section class="card print-only report-content">${header}${tableHtml}${signatures}</section></main></body></html>`;
     const w = window.open('', '_blank'); if (!w) return; w.document.open(); w.document.write(docHtml); w.document.close(); w.focus(); setTimeout(() => { w.print(); w.close(); }, 500);
   };
   return (

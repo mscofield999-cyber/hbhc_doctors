@@ -250,6 +250,10 @@ body.theme-dark .duties-table tbody tr:hover, body.theme-dark .oncall-monthly-ta
   .year-bar .highlight.planned { background: rgba(245, 158, 11, 0.45); }
   .year-bar .highlight.approved { background: rgba(16, 185, 129, 0.45); }
   .year-bar .month-label { font-size: 9pt; color: #666; }
+  * { box-shadow: none !important; }
+  .card, .hospital-card, .doctor-card, .assign-panel, .kebab-menu, .chip, .tab-chip, .vtabs .tab, .nav-link, .day-cell, .topnav .dropdown { background: #fff !important; border-color: #bbb !important; }
+  .card::before, .card::after, .hospital-card::before, .hospital-card::after, .doctor-card::before, .doctor-card::after, .assign-panel::before, .assign-panel::after, .kebab-menu::before, .kebab-menu::after, .chip::before, .tab-chip::before, .vtabs .tab::before, .nav-link::before, .day-cell::before { display: none !important; }
+  body.bg-watermark::before { opacity: 0.14 !important; background-size: 460px auto !important; filter: none !important; }
 }
 /* Duties: fit Date/Department/Shift/Time to content; Doctor expands */
 .duties-table thead th:nth-child(1), .duties-table td:nth-child(1) { width: 1%; white-space: nowrap; }
