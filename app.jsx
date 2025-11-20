@@ -1978,8 +1978,8 @@ function AdminPage({ hospitals, setHospitals, specialties, setSpecialties, depar
         <TabButton id="doctors" label="Doctors" />
       </aside>
       <section className="data-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Today: {todayISO}</div>
+        <div className="section-head">
+          <div className="date">Today: {todayISO}</div>
           <div className="row" style={{ margin: 0, gap: 8, alignItems: 'center' }}>
             {rolePerms.importData && (<>
               <label style={{ margin: 0 }}>Import Data (CSV/XLSX)</label>
