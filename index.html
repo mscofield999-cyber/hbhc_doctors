@@ -41,11 +41,6 @@
     </div>
     <nav class="topnav">
       <button type="button" class="nav-toggle" aria-label="Toggle navigation"><i class="bi bi-list"></i>Menu</button>
-      <select class="view-select" aria-label="View mode">
-        <option value="auto">Auto</option>
-        <option value="desktop">Desktop</option>
-        <option value="mobile">Mobile</option>
-      </select>
       <span class="user-panel"></span>
       <select class="view-role" aria-label="View as" hidden>
         <option value="">Admin (default)</option>
@@ -78,22 +73,7 @@
             var isOpen = nav.classList.toggle('open');
             btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
           });
-          var select = nav.querySelector('.view-select');
-          var applySelect = function(val){
-            if (!window.matchMedia('(max-width: 800px)').matches) return;
-            try { localStorage.setItem('view_mode', val); } catch {}
-            if (typeof window.setViewMode === 'function') window.setViewMode(val);
-          };
-          if (select) {
-            var cur = (localStorage.getItem('view_mode') || 'auto');
-            select.value = cur;
-            var updateSelectVisibility = function(){
-              select.disabled = true;
-              select.hidden = true;
-            };
-            updateSelectVisibility();
-            window.addEventListener('resize', updateSelectVisibility);
-          }
+          // view-select removed
           // Render user panel and handle logout
           var userPanel = nav.querySelector('.user-panel');
           var renderUser = function(){
@@ -161,6 +141,11 @@
             }
           };
           ensureAdminLink();
+          // Apply edge style from Admin Control setting
+          try {
+            var edgeStyle = (localStorage.getItem('edge_style') || 'rounded').toLowerCase();
+            document.body.classList.toggle('edge-sharp', edgeStyle === 'sharp');
+          } catch {}
           window.addEventListener('storage', function(e){ if (e.key === 'auth_user' || e.key === 'auth_token' || e.key === 'auth_role') { renderUser(); updateNavVisibility(); ensureAdminLink(); } });
           window.addEventListener('hashchange', updateNavVisibility);
           // Close dropdown on outside click

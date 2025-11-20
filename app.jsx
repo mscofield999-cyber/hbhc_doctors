@@ -2107,19 +2107,17 @@ function UsersPanel({ showToast }) {
 }
 
 function SettingsPanel({ showToast }) {
-  const [defaultView, setDefaultView] = React.useState(localStorage.getItem('site_default_view') || 'auto');
+  const [defaultView, setDefaultView] = React.useState('mobile');
   const apply = () => {
-    try { localStorage.setItem('site_default_view', defaultView); localStorage.setItem('view_mode', defaultView); } catch {}
-    if (typeof window.setViewMode === 'function') window.setViewMode(defaultView);
+    try { localStorage.setItem('site_default_view', 'mobile'); localStorage.setItem('view_mode', 'mobile'); } catch {}
+    if (typeof window.setViewMode === 'function') window.setViewMode('mobile');
     showToast('Settings saved');
     logAudit('settings.apply', { defaultView });
   };
   return (
     <div>
       <div className="row"><label>Default View Mode</label>
-        <select value={defaultView} onChange={e => setDefaultView(e.target.value)}>
-          <option value="auto">Auto</option>
-          <option value="desktop">Desktop</option>
+        <select value={defaultView} onChange={e => setDefaultView('mobile')}>
           <option value="mobile">Mobile</option>
         </select>
       </div>
@@ -2449,18 +2447,18 @@ function PermissionsPanel({ showToast }) {
   const [matrix, setMatrix] = React.useState(() => {
     try { return JSON.parse(localStorage.getItem('permissions_matrix') || 'null'); } catch { return null; }
   });
-  const defaults = {
-    admin: { importData: true, exportBackup: true, resetData: true, hospitals: { add: true, edit: true, remove: true }, specialties: { add: true, edit: true, remove: true }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: true } },
-    head:  { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: false } },
-    employee: { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: false, edit: false, remove: false }, doctors: { add: false, edit: false, remove: false, import: false } }
-  };
+  const defaults = getDefaultPermissionsMatrix();
   const perms = matrix || defaults;
   const [role, setRole] = React.useState('head');
   const update = (path, value) => {
     const next = JSON.parse(JSON.stringify(perms));
     let ref = next[role];
     const keys = path.split('.');
-    for (let i = 0; i < keys.length - 1; i++) ref = ref[keys[i]];
+    for (let i = 0; i < keys.length - 1; i++) {
+      const k = keys[i];
+      if (!(k in ref) || typeof ref[k] !== 'object' || ref[k] === null) ref[k] = {};
+      ref = ref[k];
+    }
     ref[keys[keys.length - 1]] = value;
     setMatrix(next);
   };
@@ -3984,8 +3982,8 @@ function DashboardPage({ hospitals, departments, doctors, specialties, vacations
   const avgDaysPerApproved = approvedCount ? Math.round((approvedVacationDays / approvedCount) * 10) / 10 : 0;
 
   return (
-      <main className="dashboard-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, padding: 16, justifyContent: 'center', maxWidth: 1200, margin: '0 auto' }}>
-        <div className="chips tabs" style={{ marginTop: 0, marginBottom: 8 }}>
+      <main className="dashboard-print">
+        <div className="chips tabs sticky" style={{ marginTop: 0, marginBottom: 8 }}>
           <TabButton id="today" label="Today" />
           <TabButton id="metrics" label="Key Metrics" />
           <TabButton id="report" label="Report" />
@@ -4327,7 +4325,7 @@ function HomePage() {
 function App() {
   ensureSeeds();
   const [route, setRoute] = React.useState('#/operations');
-  const [viewMode, setViewMode] = React.useState(localStorage.getItem('view_mode') || 'auto');
+  const [viewMode, setViewMode] = React.useState('mobile');
   const [authed, setAuthed] = React.useState(!!localStorage.getItem('auth_token'));
   const [hospitals, setHospitals] = React.useState(store.read('hospitals', []));
   const [specialties, setSpecialties] = React.useState(store.read('specialties', []));
@@ -4342,14 +4340,14 @@ function App() {
   React.useEffect(() => { store.write('departments', departments); }, [departments]);
   React.useEffect(() => { store.write('vacation_plans', vacationPlans); }, [vacationPlans]);
   React.useEffect(() => {
-    const applyViewMode = (m) => {
-      document.body.classList.remove('view-mobile','view-desktop');
-      if (m === 'mobile') document.body.classList.add('view-mobile');
-      if (m === 'desktop') document.body.classList.add('view-desktop');
+    const applyViewMode = () => {
+      document.body.classList.remove('view-desktop');
+      document.body.classList.add('view-mobile');
+      try { localStorage.setItem('view_mode', 'mobile'); } catch {}
     };
-    applyViewMode(viewMode);
-    window.setViewMode = (m) => { try { localStorage.setItem('view_mode', m); } catch {} setViewMode(m || 'auto'); };
-    const onStorage = (e) => { if (e.key === 'view_mode') setViewMode((e.newValue || 'auto')); };
+    applyViewMode();
+    window.setViewMode = () => { try { localStorage.setItem('view_mode', 'mobile'); } catch {} setViewMode('mobile'); };
+    const onStorage = (e) => { if (e.key === 'view_mode') { setViewMode('mobile'); applyViewMode(); } };
     window.addEventListener('storage', onStorage);
     return () => { window.removeEventListener('storage', onStorage); delete window.setViewMode; };
   }, [viewMode]);
@@ -4494,7 +4492,6 @@ function App() {
     pushSub(firebaseService.subscribe('duties', wrap('duties', v => { setDuties(v); store.write('duties', v); })));
     return () => { subs.forEach(fn => { try { fn(); } catch {} }); };
   }, []);
-  
   return (
       <Router route={route} setRoute={setRoute}>
         {route === '#/login' && <LoginPage setRoute={setRoute} />}
