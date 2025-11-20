@@ -80,13 +80,19 @@
           });
           var select = nav.querySelector('.view-select');
           var applySelect = function(val){
+            if (!window.matchMedia('(max-width: 800px)').matches) return;
             try { localStorage.setItem('view_mode', val); } catch {}
             if (typeof window.setViewMode === 'function') window.setViewMode(val);
           };
           if (select) {
             var cur = (localStorage.getItem('view_mode') || 'auto');
             select.value = cur;
-            select.addEventListener('change', function(){ applySelect(select.value); });
+            var updateSelectVisibility = function(){
+              select.disabled = true;
+              select.hidden = true;
+            };
+            updateSelectVisibility();
+            window.addEventListener('resize', updateSelectVisibility);
           }
           // Render user panel and handle logout
           var userPanel = nav.querySelector('.user-panel');
