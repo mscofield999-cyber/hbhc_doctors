@@ -1724,9 +1724,36 @@ function DutiesDesigner({ hospitals, departments, doctors, shifts, duties, setDu
 
 function getDefaultPermissionsMatrix() {
   return {
-    admin: { importData: true, exportBackup: true, resetData: true, hospitals: { add: true, edit: true, remove: true }, specialties: { add: true, edit: true, remove: true }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: true } },
-    head:  { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: true, edit: true, remove: true }, doctors: { add: true, edit: true, remove: true, import: false } },
-    employee: { importData: false, exportBackup: false, resetData: false, hospitals: { add: false, edit: false, remove: false }, specialties: { add: false, edit: false, remove: false }, departments: { add: false, edit: false, remove: false }, doctors: { add: false, edit: false, remove: false, import: false } }
+    admin: {
+      importData: true, exportBackup: true, resetData: true,
+      hospitals: { add: true, edit: true, remove: true },
+      specialties: { add: true, edit: true, remove: true },
+      departments: { add: true, edit: true, remove: true },
+      doctors: { add: true, edit: true, remove: true, import: true },
+      sections: { home: true, dashboard: true, operations: true, dataEntry: true, adminControl: true, diagnostics: true },
+      ops: { duties: { assignAdd: true, assignRemove: true, save: true }, oncall: { assignAdd: true, assignRemove: true, save: true }, vacation: { request: true, approve: true } },
+      adminPanels: { users: true, settings: true, access: true, permissions: true, overview: true, invite: true, policies: true, audit: true }
+    },
+    head: {
+      importData: false, exportBackup: false, resetData: false,
+      hospitals: { add: false, edit: false, remove: false },
+      specialties: { add: false, edit: false, remove: false },
+      departments: { add: true, edit: true, remove: true },
+      doctors: { add: true, edit: true, remove: true, import: false },
+      sections: { home: true, dashboard: true, operations: true, dataEntry: true, adminControl: false, diagnostics: true },
+      ops: { duties: { assignAdd: true, assignRemove: true, save: true }, oncall: { assignAdd: true, assignRemove: true, save: true }, vacation: { request: true, approve: false } },
+      adminPanels: { users: false, settings: false, access: false, permissions: false, overview: false, invite: false, policies: false, audit: false }
+    },
+    employee: {
+      importData: false, exportBackup: false, resetData: false,
+      hospitals: { add: false, edit: false, remove: false },
+      specialties: { add: false, edit: false, remove: false },
+      departments: { add: false, edit: false, remove: false },
+      doctors: { add: false, edit: false, remove: false, import: false },
+      sections: { home: true, dashboard: true, operations: false, dataEntry: false, adminControl: false, diagnostics: true },
+      ops: { duties: { assignAdd: false, assignRemove: false, save: false }, oncall: { assignAdd: false, assignRemove: false, save: false }, vacation: { request: true, approve: false } },
+      adminPanels: { users: false, settings: false, access: false, permissions: false, overview: false, invite: false, policies: false, audit: false }
+    }
   };
 }
 function getPermissions(role) {
@@ -1735,8 +1762,11 @@ function getPermissions(role) {
   return (matrix && matrix[role]) || defs[role] || defs.employee;
 }
 function getOpsPermissions(role) {
-  const defs = { admin: { assignAdd: true, assignRemove: true, save: true }, head: { assignAdd: true, assignRemove: true, save: true }, employee: { assignAdd: false, assignRemove: false, save: false } };
-  return defs[role] || defs.employee;
+  let matrix; try { matrix = JSON.parse(localStorage.getItem('permissions_matrix') || 'null'); } catch { matrix = null; }
+  const base = getDefaultPermissionsMatrix();
+  const perms = (matrix && matrix[role]) || base[role] || base.employee;
+  const d = perms && perms.ops && perms.ops.duties;
+  return d || { assignAdd: false, assignRemove: false, save: false };
 }
 function logAudit(action, payload) {
   const actor = localStorage.getItem('auth_user') || '';
@@ -2455,6 +2485,15 @@ function PermissionsPanel({ showToast }) {
         <div className="row"><label>Reset Data</label><input type="checkbox" checked={!!R.resetData} onChange={e => update('resetData', e.target.checked)} /></div>
       </div>
       <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Sections Visibility</div>
+        <div className="row"><label>Home</label><input type="checkbox" checked={!!(R.sections?.home)} onChange={e => update('sections.home', e.target.checked)} /></div>
+        <div className="row"><label>Dashboard</label><input type="checkbox" checked={!!(R.sections?.dashboard)} onChange={e => update('sections.dashboard', e.target.checked)} /></div>
+        <div className="row"><label>Operations</label><input type="checkbox" checked={!!(R.sections?.operations)} onChange={e => update('sections.operations', e.target.checked)} /></div>
+        <div className="row"><label>Data Entry</label><input type="checkbox" checked={!!(R.sections?.dataEntry)} onChange={e => update('sections.dataEntry', e.target.checked)} /></div>
+        <div className="row"><label>Admin Control</label><input type="checkbox" checked={!!(R.sections?.adminControl)} onChange={e => update('sections.adminControl', e.target.checked)} /></div>
+        <div className="row"><label>Diagnostics</label><input type="checkbox" checked={!!(R.sections?.diagnostics)} onChange={e => update('sections.diagnostics', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
         <div className="name">Hospitals</div>
         <div className="row"><label>Add</label><input type="checkbox" checked={!!R.hospitals.add} onChange={e => update('hospitals.add', e.target.checked)} /></div>
         <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.hospitals.edit} onChange={e => update('hospitals.edit', e.target.checked)} /></div>
@@ -2478,6 +2517,34 @@ function PermissionsPanel({ showToast }) {
         <div className="row"><label>Edit</label><input type="checkbox" checked={!!R.doctors.edit} onChange={e => update('doctors.edit', e.target.checked)} /></div>
         <div className="row"><label>Remove</label><input type="checkbox" checked={!!R.doctors.remove} onChange={e => update('doctors.remove', e.target.checked)} /></div>
         <div className="row"><label>Import</label><input type="checkbox" checked={!!R.doctors.import} onChange={e => update('doctors.import', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Operations · Duties Designer</div>
+        <div className="row"><label>Assign Add</label><input type="checkbox" checked={!!(R.ops?.duties?.assignAdd)} onChange={e => update('ops.duties.assignAdd', e.target.checked)} /></div>
+        <div className="row"><label>Assign Remove</label><input type="checkbox" checked={!!(R.ops?.duties?.assignRemove)} onChange={e => update('ops.duties.assignRemove', e.target.checked)} /></div>
+        <div className="row"><label>Save</label><input type="checkbox" checked={!!(R.ops?.duties?.save)} onChange={e => update('ops.duties.save', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Operations · On-call</div>
+        <div className="row"><label>Assign Add</label><input type="checkbox" checked={!!(R.ops?.oncall?.assignAdd)} onChange={e => update('ops.oncall.assignAdd', e.target.checked)} /></div>
+        <div className="row"><label>Assign Remove</label><input type="checkbox" checked={!!(R.ops?.oncall?.assignRemove)} onChange={e => update('ops.oncall.assignRemove', e.target.checked)} /></div>
+        <div className="row"><label>Save</label><input type="checkbox" checked={!!(R.ops?.oncall?.save)} onChange={e => update('ops.oncall.save', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Operations · Vacation</div>
+        <div className="row"><label>Request</label><input type="checkbox" checked={!!(R.ops?.vacation?.request)} onChange={e => update('ops.vacation.request', e.target.checked)} /></div>
+        <div className="row"><label>Approve</label><input type="checkbox" checked={!!(R.ops?.vacation?.approve)} onChange={e => update('ops.vacation.approve', e.target.checked)} /></div>
+      </div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <div className="name">Admin Panels</div>
+        <div className="row"><label>Users</label><input type="checkbox" checked={!!(R.adminPanels?.users)} onChange={e => update('adminPanels.users', e.target.checked)} /></div>
+        <div className="row"><label>Settings</label><input type="checkbox" checked={!!(R.adminPanels?.settings)} onChange={e => update('adminPanels.settings', e.target.checked)} /></div>
+        <div className="row"><label>Access & Security</label><input type="checkbox" checked={!!(R.adminPanels?.access)} onChange={e => update('adminPanels.access', e.target.checked)} /></div>
+        <div className="row"><label>Permissions</label><input type="checkbox" checked={!!(R.adminPanels?.permissions)} onChange={e => update('adminPanels.permissions', e.target.checked)} /></div>
+        <div className="row"><label>Overview</label><input type="checkbox" checked={!!(R.adminPanels?.overview)} onChange={e => update('adminPanels.overview', e.target.checked)} /></div>
+        <div className="row"><label>Invite</label><input type="checkbox" checked={!!(R.adminPanels?.invite)} onChange={e => update('adminPanels.invite', e.target.checked)} /></div>
+        <div className="row"><label>Policies</label><input type="checkbox" checked={!!(R.adminPanels?.policies)} onChange={e => update('adminPanels.policies', e.target.checked)} /></div>
+        <div className="row"><label>Audit Logs</label><input type="checkbox" checked={!!(R.adminPanels?.audit)} onChange={e => update('adminPanels.audit', e.target.checked)} /></div>
       </div>
       <div style={{ marginTop: 8 }}>
         <button type="button" className="btn-view" onClick={save}><i className="bi bi-save"></i>Save Permissions</button>
