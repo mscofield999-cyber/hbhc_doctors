@@ -1067,3 +1067,66 @@ select option, select optgroup { background: var(--surface-2); color: var(--text
 .theme-dark select option, .theme-dark select optgroup { background: #101a2c; color: var(--text); }
 .dashboard-print { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding: 16px; justify-content: center; max-width: 1200px; margin: 0 auto; }
 .view-mobile .dashboard-print { grid-template-columns: 1fr; }
+.card,
+.hospital-card,
+.doctor-card,
+.assign-panel,
+.kebab-menu {
+  position: relative; overflow: hidden;
+}
+.card::before,
+.hospital-card::before,
+.doctor-card::before,
+.assign-panel::before,
+.kebab-menu::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 48%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.25) 55%, rgba(255,255,255,0.00) 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.card::after,
+.hospital-card::after,
+.doctor-card::after,
+.assign-panel::after,
+.kebab-menu::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(0,0,0,0.00) 0%, rgba(0,0,0,0.10) 70%, rgba(0,0,0,0.18) 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.chip,
+.tab-chip,
+.vtabs .tab,
+.nav-link {
+  position: relative; overflow: hidden;
+}
+.chip::before,
+.tab-chip::before,
+.vtabs .tab::before,
+.nav-link::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 55%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0.00) 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.btn,
+.btn-view,
+.btn-approve,
+.btn-deny,
+button {
+  position: relative; overflow: hidden;
+}
+.btn::before,
+.btn-view::before,
+.btn-approve::before,
+.btn-deny::before,
+button::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 60%, rgba(255,255,255,0.00) 100%);
+  pointer-events: none; border-radius: inherit;
+}
+.day-cell {
+  position: relative; overflow: hidden;
+}
+.day-cell::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 45%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.50) 0%, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0.00) 100%);
+  pointer-events: none; border-radius: inherit;
+}
